@@ -1,0 +1,45 @@
+Phase 1: Setting Up the Foundation
+
+Design Decisions:
+
+Paradigm: Choose a programming paradigm for Voyager (e.g., imperative, functional). This will influence syntax and how programmers interact with the language.
+Static vs. Dynamic Typing: Decide if variables will have pre-defined types (static) or be determined at runtime (dynamic).
+
+Development Environment:
+Set up a text editor or IDE comfortable for C development (e.g., Visual Studio Code, Code::Blocks).
+Install a C compiler like GCC.
+
+Phase 2: Building Basic Blocks
+
+Lexical Analysis (Scanner):
+Write a program (in C) to scan the source code, recognizing tokens like keywords, identifiers, operators, and punctuation.
+Use libraries like ctype.h for character classification tasks.
+
+Syntax Analysis (Parser):
+Develop a parser (in C) to analyze the structure of the code, checking for valid syntax based on your defined grammar.
+Consider using parser generators like Bison if you find manual parsing overwhelming.
+
+Semantic Analysis:
+Implement semantic analysis (in C) to verify the meaning of the code after successful parsing. This includes type checking and ensuring code logic is valid.
+
+Abstract Syntax Tree (AST):
+Create an in-memory representation of the parsed code structure using an AST. This tree-like structure will hold information about variables, expressions, and statements.
+
+Phase 3: Core Functionalities
+
+Variables:
+Implement a symbol table to store variable names, types, and values.
+Develop functions for variable declaration, assignment, and access.
+
+Expressions:
+Write functions to handle different types of expressions (e.g., arithmetic, logical).
+Utilize the AST to traverse and evaluate expressions.
+
+Statements:
+Implement basic control flow statements like if/else based on the parsed AST.
+Include functionalities for printing to the console and reading user input using C library functions like printf and scanf.
+
+Phase 4: Building the Toolchain (Optional):
+
+Consider creating a simple interpreter (in C) to execute Voyager code directly, translating the AST into machine instructions.
+This is an advanced step, but it allows you to test your language without relying on a full-fledged compiler.
