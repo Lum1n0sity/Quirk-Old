@@ -2,12 +2,8 @@ Phase 1: Setting Up the Foundation
 
 Design Decisions:
 
-Paradigm: Choose a programming paradigm for Voyager (e.g., imperative, functional). This will influence syntax and how programmers interact with the language.
-Static vs. Dynamic Typing: Decide if variables will have pre-defined types (static) or be determined at runtime (dynamic).
-
-Development Environment:
-Set up a text editor or IDE comfortable for C development (e.g., Visual Studio Code, Code::Blocks).
-Install a C compiler like GCC.
+Paradigm: imperative
+Typing: Static
 
 Phase 2: Building Basic Blocks
 
