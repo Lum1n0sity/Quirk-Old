@@ -21,7 +21,6 @@ enum TokenType {
 	STRING,
 	BOOL,
 	END_OF_FILE,
-	UNKNOWN,
 	NONE,
 	ERROR,
 };
@@ -42,14 +41,12 @@ class Lexer {
 
 			while (file_.get(c) && std::isspace(c)) {}
 
-		    if (file_.eof()) {
+			if (file_.eof()) {
 		        return std::make_pair(TokenType::END_OF_FILE, "");
 		    }
-
-    		std::cout << "Current character: " << c << std::endl;
-
+			 
 			if (c == '(' || c == ')') {
-        		return std::make_pair(TokenType::ROUND_PAREN, std::string(1, c));
+        			return std::make_pair(TokenType::ROUND_PAREN, std::string(1, c));
 			} else if (c == '{' ||c == '}') {
 				tokenValue += c;
 				return std::make_pair(TokenType::CURLY_PAREN, tokenValue);
@@ -67,6 +64,7 @@ class Lexer {
 			} else if (std::isdigit(c)) {
 				tokenValue += c;
 				while (file_.get(c) && std::isdigit(c)) {
+					std::cout << c << std::endl;
 					tokenValue += c;
 				}
 
@@ -96,14 +94,11 @@ class Lexer {
 				return std::make_pair(TokenType::NUMERIC_LITERAL, tokenValue);
 			} else if (std::isalpha(c) || c == '_') {
 		        tokenValue += c;
-				while (file_.get(c) && (std::isalnum(c) || c == '_')) {
-					if (c == '(' || c == ')') {
-						std::cout << "Bracket !!!!" << std::endl;
-						return std::make_pair(TokenType::ROUND_PAREN, std::string(1, c));
-					}
-
+				while (file_.get(c) && std::isalnum(c) || c == '_') {
 				    tokenValue += c;
 				}
+
+				file_.unget();
 
 		        if (std::regex_match(tokenValue, KEYWORD_REGEX)) {
 		            return std::make_pair(TokenType::KEYWORD, tokenValue);
@@ -152,7 +147,7 @@ class Lexer {
 		std::ifstream file_;
 		int currentPos_;
 		const std::string MATH_OPERATORS = "+-*/%^";
-		const std::regex KEYWORD_REGEX{"if|else|while|for"};
+		const std::regex KEYWORD_REGEX{"if|else|while|for|function"};
 		const std::regex IDENTIFIER_REGEX{"[a-zA-Z_][a-zA-Z0-9_]*"};
 		const std::regex NUMERIC_LITERAL_REGEX{"\\d+"};
 		const std::regex STRING_LITERAL_REGEX{"\"[^\"]*\""};

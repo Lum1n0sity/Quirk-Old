@@ -1,10 +1,13 @@
 string _temp = "Hello World";
 int _tempINT = 2;
 
-test()
-testArray[]
-test!!
+test();
+testArray[];
 
 if (_temp == "Hello World") {
-    log ("Temp is Hello World");
+    print("Temp is Hello World");
+}
+
+function print(string message) {
+    print(message);
 }
