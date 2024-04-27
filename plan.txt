@@ -1,0 +1,8 @@
+Core Functionalities:
+Focus on building the essential features of Voyager for console applications, like data types, variables, operators, control flow (if/else, loops), and basic input/output functions (print, read).
+Lexical Analysis & Parsing:
+Implement a lexer to break down code into tokens and a parser to understand the structure of your language. Libraries like PLY (Python) or Lex/Bison (C++) can help with this.
+Interpreter:
+Develop a basic interpreter to execute Voyager code line by line. This allows you to test your language as you build it.
+Standard Library (Stdlib) Basics:
+Start with a foundational Stdlib that includes essential functions for math operations, string manipulation, and user interaction.

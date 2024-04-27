@@ -1,0 +1,6 @@
+string _temp = "Hello World";
+int _tempINT = 2;
+
+if (_temp == "Hello World") {
+    log ("Temp is Hello World");
+}
