@@ -13,6 +13,7 @@ enum TokenType {
 	ROUND_PAREN,
 	CURLY_PAREN,
 	SQUARE_PAREN,
+	RELATIONAL_OPERATOR,
 	COMMA,
 	MATH_OPERATOR,
 	INT,
@@ -114,10 +115,35 @@ class Lexer {
 					return std::make_pair(TokenType::BOOL, tokenValue);
 				} else if (std::regex_match(tokenValue, IDENTIFIER_REGEX)) {
 		            return std::make_pair(TokenType::IDENTIFIER, tokenValue);
-		        }
+		        } else {
+					return std::make_pair(TokenType::ERROR, tokenValue);
+				}
 		    } else if (c == '=') {
 				tokenValue += c;
-				return std::make_pair(TokenType::ASSIGNMENT, tokenValue);
+				while(file_.get(c) && c == '=') {
+					tokenValue += c;
+				}
+
+				file_.unget();
+
+				if (tokenValue == "==") {
+					return std::make_pair(TokenType::RELATIONAL_OPERATOR, tokenValue);
+				} else {
+					return std::make_pair(TokenType::ASSIGNMENT, tokenValue);
+				}
+			} else if (c == '!' || c == '<' || c == '>') {
+				tokenValue += c;
+				while (file_.get(c) && c == '=') {
+					tokenValue += c;
+				}
+
+				file_.unget();
+
+				if (std::regex_match(tokenValue, RELATIONAL_OPERATOR_REGEX)) {
+					return std::make_pair(TokenType::RELATIONAL_OPERATOR, tokenValue);
+				} else {
+					return std::make_pair(TokenType::ERROR, tokenValue);
+				}
 			} else if (c == ';') {
 				tokenValue += c;
 				return std::make_pair(TokenType::PUNCTUATION, tokenValue);
@@ -156,6 +182,7 @@ class Lexer {
 		const std::regex STRING_REGEX{"string"};
 		const std::regex CHAR_REGEX{"char"};
 		const std::regex BOOL_REGEX{"bool"};
+		const std::regex RELATIONAL_OPERATOR_REGEX{"==|!=|<|>|<=|>="};
 };
 
 void compileFile(const std::string& filename) {
