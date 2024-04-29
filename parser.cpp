@@ -84,9 +84,8 @@ bool Parser::parseCondition() {
             _part1 = token.second;
         }
 
-        while (token.first == TokenType::ASSIGNMENT && _operator.size() < 2) {
-            _operator += token.second;
-            token = lexer_.getNextToken();
+        if (token.first == TokenType::RELATIONAL_OPERATOR && _operator.empty()) {
+            _operator = token.second;
         }
 
         if (_part2.empty()) {
