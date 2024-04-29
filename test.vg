@@ -1,3 +1,9 @@
+string _string = "Hello World!";
+char _char = 'j';
+int _int = 10;
+float _float = 10.5;
+bool _bool = false;
+
 if (_temp == "Hello World") {
     print("Temp is Hello World");
 }

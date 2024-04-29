@@ -7,7 +7,9 @@ enum TokenType {
 	KEYWORD,
 	IDENTIFIER,
 	STRING_LITERAL,
+	CHAR_LITERAL,
 	NUMERIC_LITERAL,
+	BOOL_LITERAL,
 	PUNCTUATION,
 	ASSIGNMENT,
 	ROUND_PAREN,
@@ -28,7 +30,7 @@ enum TokenType {
 
 class Lexer {
 	public:
-		Lexer(const std::string& filename) : filename_(filename), currentPos_(0) {
+		Lexer(const std::string& filename) : filename_(filename), currentPos_(0), lineNumber_(1) {
 			file_.open(filename_, std::ios::in);
 			if(!file_.is_open()) {
 				std::cerr << "Error: Could not open file " << filename_ << std::endl;
@@ -40,7 +42,11 @@ class Lexer {
 
 		    char c;
 
-			while (file_.get(c) && std::isspace(c)) {}
+			while (file_.get(c) && std::isspace(c)) {
+				if (c == '\n') {
+					lineNumber_++;
+				}
+			}
 
 			if (file_.eof()) {
 		        return std::make_pair(TokenType::END_OF_FILE, "");
@@ -62,6 +68,19 @@ class Lexer {
 				}
 				tokenValue += c;
 				return std::make_pair(TokenType::STRING_LITERAL, tokenValue);
+			} else if (c == '\'') {
+				tokenValue += c;
+				while (file_.get(c) && c != ';') {
+					tokenValue += c;
+				}
+
+				file_.unget();
+
+				if (std::regex_match(tokenValue, CHAR_LITERAL_REGEX)) {
+					return std::make_pair(TokenType::CHAR_LITERAL, tokenValue);
+				} else {
+					return std::make_pair(TokenType::ERROR, tokenValue);
+				}
 			} else if (std::isdigit(c)) {
 				tokenValue += c;
 				while (file_.get(c) && std::isdigit(c)) {
@@ -113,6 +132,8 @@ class Lexer {
 					return std::make_pair(TokenType::CHAR, tokenValue);
 				} else if (std::regex_match(tokenValue, BOOL_REGEX)) {
 					return std::make_pair(TokenType::BOOL, tokenValue);
+				} else if (std::regex_match(tokenValue, BOOL_LITERAL_REGEX)) {
+					return std::make_pair(TokenType::BOOL_LITERAL, tokenValue);
 				} else if (std::regex_match(tokenValue, IDENTIFIER_REGEX)) {
 		            return std::make_pair(TokenType::IDENTIFIER, tokenValue);
 		        } else {
@@ -164,6 +185,10 @@ class Lexer {
 			return MATH_OPERATORS.find(c) != std::string::npos;
 		}
 		
+		int getCurrentLineNumber() const {
+			return lineNumber_;
+		}
+
 		~Lexer() {
 			file_.close();
 		}
@@ -172,11 +197,14 @@ class Lexer {
 		std::string filename_;
 		std::ifstream file_;
 		int currentPos_;
+		int lineNumber_;
 		const std::string MATH_OPERATORS = "+-*/%^";
 		const std::regex KEYWORD_REGEX{"if|else|while|for|function"};
 		const std::regex IDENTIFIER_REGEX{"[a-zA-Z_][a-zA-Z0-9_]*"};
 		const std::regex NUMERIC_LITERAL_REGEX{"\\d+"};
 		const std::regex STRING_LITERAL_REGEX{"\"[^\"]*\""};
+		const std::regex CHAR_LITERAL_REGEX{"\'[^\']*\'"};
+		const std::regex BOOL_LITERAL_REGEX{"true|false"};
 		const std::regex INT_REGEX{"int"};
 		const std::regex FLOAT_REGEX{"float"};
 		const std::regex STRING_REGEX{"string"};
@@ -201,8 +229,8 @@ void compileFile(const std::string& filename) {
 	}
 }
 
-int main() {
-	compileFile("test.vg");
+// int main() {
+// 	compileFile("test.vg");
 
-	return 0;
-}
+// 	return 0;
+// }

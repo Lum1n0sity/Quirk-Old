@@ -11,7 +11,7 @@ class Parser {
     private:
         Lexer lexer_;
         bool parseCondition();
-        void parseKEYWORDCode();
+        bool parseVarAssignment(TokenType varType);
 };
 
 Parser::Parser(const std::string& filename) : lexer_(filename) {}
@@ -21,6 +21,8 @@ void Parser::parse() {
 
     do {
         token = lexer_.getNextToken();
+
+        std::cout << token.second << std::endl;
 
         switch (token.first) {
             case TokenType::KEYWORD:
@@ -39,7 +41,7 @@ void Parser::parse() {
                         parse();
                     }
                 } else {
-                    std::cerr << "Syntax error: Unexpected token '" << token.second << "'" << std::endl;
+                    std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
                     return;
                 }
                 // Add cases for other keywords
@@ -47,13 +49,55 @@ void Parser::parse() {
             case TokenType::IDENTIFIER:
                 // Handle identifiers
                 break;
+            case TokenType::INT:
+                if (parseVarAssignment(TokenType::NUMERIC_LITERAL)) {
+                    parse();
+                } else {
+                    std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
+                    return;
+                }
+                break;
+            case TokenType::FLOAT:
+                if (parseVarAssignment(TokenType::NUMERIC_LITERAL)) {
+                    parse();
+                } else {
+                    std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
+                    return;
+                }
+                break;
+            case TokenType::STRING:
+                if (parseVarAssignment(TokenType::STRING_LITERAL)) {
+                    parse();
+                } else {
+                    std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
+                    return;                    
+                }
+                break; 
+            case TokenType::CHAR:
+                if (parseVarAssignment(TokenType::CHAR_LITERAL)) {
+                    parse();
+                } else {
+                    std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
+                    return;
+                }
+                break;
+            case TokenType::BOOL:
+                if (parseVarAssignment(TokenType::BOOL_LITERAL)) {
+                    parse();
+                } else {
+                    std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
+                    return;
+                }
+                break;
+            case TokenType::PUNCTUATION:
+                break;
             case TokenType::ERROR:
                 // Throw syntax error
-                std::cerr << "Syntax error: Unexpected token '" << token.second << "'" << std::endl;
+                std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
                 return;
             default:
-                // Handle other token types if needed
-                break;
+                std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
+                return;
         }
     } while (token.first != TokenType::END_OF_FILE);
 }
@@ -97,11 +141,43 @@ bool Parser::parseCondition() {
 
     // Check if all condition parts are parsed correctly
     if (_part1.empty() || _operator.empty() || _part2.empty()) {
-        std::cerr << "Syntax error: Incomplete condition in 'if' statement" << std::endl;
+        std::cerr << "Syntax error: Incomplete condition in 'if' statement! Line: " << lexer_.getCurrentLineNumber() << std::endl;
         return true;
     } else {
         return false;
     }
+}
+
+bool Parser::parseVarAssignment(TokenType varType) {
+    std::pair<TokenType, std::string> token;
+
+    // std::cout << token.second << std::endl;
+
+    token = lexer_.getNextToken();
+    if (token.first != TokenType::IDENTIFIER) {
+        std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
+        return false;
+    }
+
+    // std::cout << token.second << std::endl;
+
+    token = lexer_.getNextToken();
+    if (token.first != TokenType::ASSIGNMENT) {
+        std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
+        return false;
+    }
+
+    // std::cout << token.second << std::endl;
+
+    token = lexer_.getNextToken();
+    if (token.first != varType) {
+        std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
+        return false;
+    }
+
+    // std::cout << token.second << std::endl;
+
+    return true;
 }
 
 int main() {
