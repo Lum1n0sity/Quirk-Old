@@ -1,3 +1,5 @@
+Zephyrus ("ZEF-uh-rus")
+
 Core Functionalities:
 Focus on building the essential features of Voyager for console applications, like data types, variables, operators, control flow (if/else, loops), and basic input/output functions (print, read).
 Lexical Analysis & Parsing:
@@ -6,3 +8,40 @@ Interpreter:
 Develop a basic interpreter to execute Voyager code line by line. This allows you to test your language as you build it.
 Standard Library (Stdlib) Basics:
 Start with a foundational Stdlib that includes essential functions for math operations, string manipulation, and user interaction.
+
+Features:
+Core Language Features:
+
+Syntax: C#-like syntax for readability and ease of use.
+Variables: Support for primitive data types (int, float, char, etc.) with strong typing for type safety.
+Operators: Arithmetic, comparison, logical, bitwise operators for manipulating data.
+Control Flow: if, else, for, while, do-while statements for program logic.
+Functions: Ability to define functions with parameters and return types for modularity.
+Classes (Optional): Object-oriented features for code organization and reusability (consider trade-offs for performance in OS development).
+System Programming Features:
+
+Memory Management: Provide mechanisms for manual memory allocation (e.g., malloc, free) and deallocation for fine-grained control.
+Pointers: Allow direct memory manipulation using pointers for low-level hardware interaction.
+Register Access: Enable access to specific CPU registers for performance-critical operations.
+Assembly Integration: Support for inline assembly code blocks to interact with hardware directly when needed.
+OS Development Features:
+
+Device Drivers: Provide mechanisms for writing device drivers to interact with hardware components.
+Process Management: Offer primitives for creating, managing, and scheduling processes (e.g., fork, exec).
+Interrupt Handling: Enable defining interrupt handlers for handling hardware events asynchronously.
+Threading (Optional): Consider support for threads for concurrent execution within processes (evaluate complexity vs. benefit).
+Bootstrapping Features:
+
+Standalone Compilation: Allow compilation of Voyager code to machine code directly without relying on external languages.
+Runtime Environment (Optional): Consider a minimal runtime environment for essential functionalities during program execution.
+Linker/Loader: Implement a basic linker/loader to link object files and load them into memory for execution.
+Basic Language Features:
+
+Comments: Support for single-line and multi-line comments to improve code readability.
+Preprocessor Directives (Optional): Conditional compilation or including header files for advanced code organization (might add complexity).
+Input/Output: Provide basic mechanisms for reading from and writing to standard input/output (console).
+Additional Considerations:
+
+Error Handling: Implement mechanisms for handling errors during compilation and runtime (exceptions, error codes).
+Debugging Tools: Consider developing basic debugging tools for easier code inspection and troubleshooting.
+Documentation: Write clear and concise documentation for the language syntax, features, and libraries.

@@ -199,7 +199,7 @@ class Lexer {
 		int currentPos_;
 		int lineNumber_;
 		const std::string MATH_OPERATORS = "+-*/%^";
-		const std::regex KEYWORD_REGEX{"if|else|while|for|function"};
+		const std::regex KEYWORD_REGEX{"if|else|while|for|function|out"};
 		const std::regex IDENTIFIER_REGEX{"[a-zA-Z_][a-zA-Z0-9_]*"};
 		const std::regex NUMERIC_LITERAL_REGEX{"\\d+"};
 		const std::regex STRING_LITERAL_REGEX{"\"[^\"]*\""};

@@ -5,5 +5,5 @@ float _float = 10.5;
 bool _bool = false;
 
 if (_temp == "Hello World") {
-    print("Temp is Hello World");
+    out("Temp is Hello World");
 }

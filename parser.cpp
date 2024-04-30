@@ -12,6 +12,7 @@ class Parser {
         Lexer lexer_;
         bool parseCondition();
         bool parseVarAssignment(TokenType varType);
+        bool isNextTokenLiteralOrIdentifier();
 };
 
 Parser::Parser(const std::string& filename) : lexer_(filename) {}
@@ -40,6 +41,19 @@ void Parser::parse() {
                     if (parseCondition()) {
                         parse();
                     }
+                } else if (token.second == "out") {
+                    token = lexer_.getNextToken();
+                    if (token.first == TokenType::ROUND_PAREN) {
+                        if (isNextTokenLiteralOrIdentifier()) {
+                            token = lexer_.getNextToken();
+                            if (token.first == TokenType::ROUND_PAREN) {
+                                parse();
+                            }
+                        }
+                    } else {
+                        std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
+                        return;                        
+                    }
                 } else {
                     std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
                     return;
@@ -48,6 +62,8 @@ void Parser::parse() {
                 break;
             case TokenType::IDENTIFIER:
                 // Handle identifiers
+                break;
+            case TokenType::CURLY_PAREN:
                 break;
             case TokenType::INT:
                 if (parseVarAssignment(TokenType::NUMERIC_LITERAL)) {
@@ -178,6 +194,14 @@ bool Parser::parseVarAssignment(TokenType varType) {
     // std::cout << token.second << std::endl;
 
     return true;
+}
+
+bool Parser::isNextTokenLiteralOrIdentifier() {
+    std::pair<TokenType, std::string> token = lexer_.getNextToken();
+    TokenType tokenType = token.first;
+    return (tokenType == TokenType::STRING_LITERAL || tokenType == TokenType::NUMERIC_LITERAL || 
+            tokenType == TokenType::CHAR_LITERAL || tokenType == TokenType::BOOL_LITERAL || 
+            tokenType == TokenType::IDENTIFIER);
 }
 
 int main() {
