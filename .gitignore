@@ -1,3 +1,6 @@
-.exe
-.vscode
-.idea
+*.exe
+
+.vscode/
+.idea/
+
+*.qk
