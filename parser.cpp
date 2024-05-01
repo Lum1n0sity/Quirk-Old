@@ -20,10 +20,8 @@ Parser::Parser(const std::string& filename) : lexer_(filename) {}
 void Parser::parse() {
     std::pair<TokenType, std::string> token;
 
-    do {
+    while (token.first != TokenType::END_OF_FILE) {
         token = lexer_.getNextToken();
-
-        std::cout << token.second << std::endl;
 
         switch (token.first) {
             case TokenType::KEYWORD:
@@ -107,15 +105,19 @@ void Parser::parse() {
                 break;
             case TokenType::PUNCTUATION:
                 break;
+            case TokenType::NONE:
+                break;
             case TokenType::ERROR:
                 // Throw syntax error
                 std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
                 return;
+            case TokenType::END_OF_FILE:
+                break;
             default:
                 std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
                 return;
         }
-    } while (token.first != TokenType::END_OF_FILE);
+    }
 }
 
 bool Parser::parseCondition() {
@@ -167,15 +169,11 @@ bool Parser::parseCondition() {
 bool Parser::parseVarAssignment(TokenType varType) {
     std::pair<TokenType, std::string> token;
 
-    // std::cout << token.second << std::endl;
-
     token = lexer_.getNextToken();
     if (token.first != TokenType::IDENTIFIER) {
         std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
         return false;
     }
-
-    // std::cout << token.second << std::endl;
 
     token = lexer_.getNextToken();
     if (token.first != TokenType::ASSIGNMENT) {
@@ -183,15 +181,11 @@ bool Parser::parseVarAssignment(TokenType varType) {
         return false;
     }
 
-    // std::cout << token.second << std::endl;
-
     token = lexer_.getNextToken();
     if (token.first != varType) {
         std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
         return false;
     }
-
-    // std::cout << token.second << std::endl;
 
     return true;
 }
@@ -205,7 +199,7 @@ bool Parser::isNextTokenLiteralOrIdentifier() {
 }
 
 int main() {
-    Parser parser("test.vg");
+    Parser parser("test.qk");
     parser.parse();
 
     return 0;

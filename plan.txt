@@ -1,4 +1,4 @@
-Zephyrus ("ZEF-uh-rus")
+Quirk
 
 Core Functionalities:
 Focus on building the essential features of Voyager for console applications, like data types, variables, operators, control flow (if/else, loops), and basic input/output functions (print, read).

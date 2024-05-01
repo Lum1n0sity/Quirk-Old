@@ -230,7 +230,7 @@ void compileFile(const std::string& filename) {
 }
 
 // int main() {
-// 	compileFile("test.vg");
+// 	compileFile("test.qk");
 
 // 	return 0;
 // }
