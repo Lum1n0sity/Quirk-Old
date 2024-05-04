@@ -2,7 +2,15 @@
 #include <string>
 #include <fstream>
 #include <regex>
+#include <optional>
 #include "lexer.cpp"
+
+struct Condition {
+    std::string part1;
+    std::string op;
+    std::string part2;
+    bool error;
+};
 
 class ASTNode {
     public:
@@ -16,23 +24,28 @@ class ASTNode {
         std::string type;
         std::string value;
         std::vector<ASTNode*> children;
-        ASTNode* ast_root_;
 };
 
 class Parser {
     public:
         Parser(const std::string& filename);
-        void parse();
+
+        ASTNode* parse();
+        Condition parseCondition();
     private:
         Lexer lexer_;
-        bool parseCondition();
         bool parseVarAssignment(TokenType varType);
         bool isNextTokenLiteralOrIdentifier();
 };
 
 Parser::Parser(const std::string& filename) : lexer_(filename) {}
 
-void Parser::parse() {
+Parser parser;
+
+// TODO: Add Node parent switching
+
+ASTNode* Parser::parse() {
+    ASTNode* root = new ASTNode("Program");
     std::pair<TokenType, std::string> token;
 
     do {
@@ -41,19 +54,25 @@ void Parser::parse() {
         switch (token.first) {
             case TokenType::KEYWORD:
                 if (token.second == "if") {
-                    if (parseCondition()) {
+                    ASTNode* if_decl = new ASTNode("IF", "if");
+
+                    Condition condition = parser.parseCondition();
+
+                    if (condition.error) {
+                        std::cerr << "Error parsing condition" << std::endl;
+                        break;
+                    } else {
+                        std::string combinedCondition = condition.part1 + condition.op + condition.part2;
+                        ASTNode* conditionNode = new ASTNode("Condition", combinedCondition);
+                        root->add_child(if_decl);
                         parse();
                     }
                 } else if (token.second == "else") {
                     parse();
                 } else if (token.second == "while") {
-                    if (parseCondition()) {
-                        parse();
-                    }
+
                 } else if (token.second == "for") {
-                    if (parseCondition()) {
-                        parse();
-                    }
+
                 } else if (token.second == "out") {
                     token = lexer_.getNextToken();
                     if (token.first == TokenType::ROUND_PAREN) {
@@ -133,15 +152,17 @@ void Parser::parse() {
                 return;
         }
     } while (token.first != TokenType::END_OF_FILE);
+
+    return root;
 }
 
-bool Parser::parseCondition() {
+Condition Parser::parseCondition() {
     std::pair<TokenType, std::string> token;
 
     // Initialize condition variables
-    std::string _part1;
-    std::string _operator;
-    std::string _part2;
+    std::string part1;
+    std::string op;
+    std::string part2;
 
     // Get next token
     token = lexer_.getNextToken();
@@ -149,7 +170,7 @@ bool Parser::parseCondition() {
     // Check if token is ROUND_PAREN
     if (token.first != TokenType::ROUND_PAREN) {
         std::cerr << "Syntax error: Expected '('" << std::endl;
-        return false;
+        return { "", "", "", true }; // Return empty Condition struct with error flag set
     }
 
     // Get next token
@@ -157,27 +178,27 @@ bool Parser::parseCondition() {
 
     // Parse condition
     while (token.first != TokenType::CURLY_PAREN) {
-        if (_part1.empty()) {
-            _part1 = token.second;
+        if (part1.empty()) {
+            part1 = token.second;
         }
 
-        if (token.first == TokenType::RELATIONAL_OPERATOR && _operator.empty()) {
-            _operator = token.second;
+        if (token.first == TokenType::RELATIONAL_OPERATOR && op.empty()) {
+            op = token.second;
         }
 
-        if (_part2.empty()) {
-            _part2 = token.second;
+        if (part2.empty()) {
+            part2 = token.second;
         }
         
         token = lexer_.getNextToken();
     }
 
     // Check if all condition parts are parsed correctly
-    if (_part1.empty() || _operator.empty() || _part2.empty()) {
+    if (part1.empty() || op.empty() || part2.empty()) {
         std::cerr << "Syntax error: Incomplete condition in 'if' statement! Line: " << lexer_.getCurrentLineNumber() << std::endl;
-        return true;
+        return { "", "", "", true }; // Return empty Condition struct with error flag set
     } else {
-        return false;
+        return { part1, op, part2, false }; // Return Condition struct with parsed parts and no error
     }
 }
 
@@ -215,7 +236,26 @@ bool Parser::isNextTokenLiteralOrIdentifier() {
 
 int main() {
     Parser parser("test.qk");
+
     parser.parse();
 
     return 0;
 }
+
+/*
+    ASTNode* root = new ASTNode("Program");
+    
+    ASTNode* func_decl = new ASTNode("FunctionDeclaration", "my_function");
+    
+    ASTNode* param_list = new ASTNode("ParameterList");
+    
+    ASTNode* param1 = new ASTNode("Parameter", "param1");
+    ASTNode* param2 = new ASTNode("Parameter", "param2");
+
+    param_list->add_child(param1);
+    param_list->add_child(param2);
+
+    func_decl->add_child(param_list);
+
+    root->add_child(func_decl);
+*/
