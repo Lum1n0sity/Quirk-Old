@@ -4,6 +4,21 @@
 #include <regex>
 #include "lexer.cpp"
 
+class ASTNode {
+    public:
+        ASTNode(std::string type, std::string value = "") : type(type), value(value) {}
+
+        void add_child(ASTNode* node) {
+            children.push_back(node);
+        }
+
+    private:
+        std::string type;
+        std::string value;
+        std::vector<ASTNode*> children;
+        ASTNode* ast_root_;
+};
+
 class Parser {
     public:
         Parser(const std::string& filename);
@@ -20,7 +35,7 @@ Parser::Parser(const std::string& filename) : lexer_(filename) {}
 void Parser::parse() {
     std::pair<TokenType, std::string> token;
 
-    while (token.first != TokenType::END_OF_FILE) {
+    do {
         token = lexer_.getNextToken();
 
         switch (token.first) {
@@ -117,7 +132,7 @@ void Parser::parse() {
                 std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
                 return;
         }
-    }
+    } while (token.first != TokenType::END_OF_FILE);
 }
 
 bool Parser::parseCondition() {
