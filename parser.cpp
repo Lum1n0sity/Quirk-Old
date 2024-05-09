@@ -13,39 +13,63 @@ struct Condition {
 };
 
 class ASTNode {
-    public:
-        ASTNode(std::string type, std::string value = "") : type(type), value(value) {}
+public:
+    ASTNode(std::string type, std::string value = "") : type(type), value(value) {}
 
-        void add_child(ASTNode* node) {
-            children.push_back(node);
-        }
+    void add_child(ASTNode* node) {
+        children.push_back(node);
+    }
 
-    private:
-        std::string type;
-        std::string value;
-        std::vector<ASTNode*> children;
+    void set_parent(ASTNode* parent) {
+        parent_ = parent;
+    }
+
+    ASTNode* get_parent() const {
+        return parent_;
+    }
+
+    std::string getType() const {
+        return type;
+    }
+
+    std::string getValue() const {
+        return value;
+    }
+
+    const std::vector<ASTNode*>& getChildren() const {
+        return children;
+    }
+
+private:
+    std::string type;
+    std::string value;
+    std::vector<ASTNode*> children;
+    ASTNode* parent_;
 };
 
 class Parser {
-    public:
-        Parser(const std::string& filename);
+public:
+    Parser(const std::string& filename);
 
-        ASTNode* parse();
-        Condition parseCondition();
-    private:
-        Lexer lexer_;
-        bool parseVarAssignment(TokenType varType);
-        bool isNextTokenLiteralOrIdentifier();
+    ASTNode* parse();
+    Condition parseCondition();
+private:
+    Lexer lexer_;
+    ASTNode* current_parent_;
+    std::vector<ASTNode*> scope_stack_;
+
+    bool parseVarAssignment(TokenType varType);
+    bool isNextTokenLiteralOrIdentifier();
+    void switchParentNode(ASTNode* new_parent);
 };
 
-Parser::Parser(const std::string& filename) : lexer_(filename) {}
-
-Parser parser;
-
-// TODO: Add Node parent switching
+Parser::Parser(const std::string& filename) : lexer_(filename), current_parent_(nullptr) {}
 
 ASTNode* Parser::parse() {
     ASTNode* root = new ASTNode("Program");
+    current_parent_ = root;
+    scope_stack_.push_back(root);
+
     std::pair<TokenType, std::string> token;
 
     do {
@@ -55,8 +79,9 @@ ASTNode* Parser::parse() {
             case TokenType::KEYWORD:
                 if (token.second == "if") {
                     ASTNode* if_decl = new ASTNode("IF", "if");
+                    current_parent_->add_child(if_decl);
 
-                    Condition condition = parser.parseCondition();
+                    Condition condition = parseCondition();
 
                     if (condition.error) {
                         std::cerr << "Error parsing condition" << std::endl;
@@ -64,15 +89,18 @@ ASTNode* Parser::parse() {
                     } else {
                         std::string combinedCondition = condition.part1 + condition.op + condition.part2;
                         ASTNode* conditionNode = new ASTNode("Condition", combinedCondition);
-                        root->add_child(if_decl);
-                        parse();
+                        if_decl->add_child(conditionNode);
+
+                        current_parent_->add_child(if_decl);
+
+                        switchParentNode(if_decl);
                     }
                 } else if (token.second == "else") {
-                    parse();
+                    // Handle 'else' keyword
                 } else if (token.second == "while") {
-
+                    // Handle 'while' keyword
                 } else if (token.second == "for") {
-
+                    // Handle 'for' keyword
                 } else if (token.second == "out") {
                     token = lexer_.getNextToken();
                     if (token.first == TokenType::ROUND_PAREN) {
@@ -84,13 +112,12 @@ ASTNode* Parser::parse() {
                         }
                     } else {
                         std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
-                        return;                        
+                        return nullptr;                        
                     }
                 } else {
                     std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
-                    return;
+                    return nullptr;
                 }
-                // Add cases for other keywords
                 break;
             case TokenType::IDENTIFIER:
                 // Handle identifiers
@@ -102,7 +129,7 @@ ASTNode* Parser::parse() {
                     parse();
                 } else {
                     std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
-                    return;
+                    return nullptr;
                 }
                 break;
             case TokenType::FLOAT:
@@ -110,7 +137,7 @@ ASTNode* Parser::parse() {
                     parse();
                 } else {
                     std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
-                    return;
+                    return nullptr;
                 }
                 break;
             case TokenType::STRING:
@@ -118,7 +145,7 @@ ASTNode* Parser::parse() {
                     parse();
                 } else {
                     std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
-                    return;                    
+                    return nullptr;
                 }
                 break; 
             case TokenType::CHAR:
@@ -126,7 +153,7 @@ ASTNode* Parser::parse() {
                     parse();
                 } else {
                     std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
-                    return;
+                    return nullptr;
                 }
                 break;
             case TokenType::BOOL:
@@ -134,7 +161,7 @@ ASTNode* Parser::parse() {
                     parse();
                 } else {
                     std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
-                    return;
+                    return nullptr;
                 }
                 break;
             case TokenType::PUNCTUATION:
@@ -144,14 +171,16 @@ ASTNode* Parser::parse() {
             case TokenType::ERROR:
                 // Throw syntax error
                 std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
-                return;
+                return nullptr;
             case TokenType::END_OF_FILE:
                 break;
             default:
                 std::cerr << "Syntax error: Unexpected token '" << token.second << "' Line: " << lexer_.getCurrentLineNumber() << std::endl;
-                return;
+                return nullptr;
         }
     } while (token.first != TokenType::END_OF_FILE);
+
+    // std::cout << root << std::endl;;
 
     return root;
 }
@@ -234,10 +263,37 @@ bool Parser::isNextTokenLiteralOrIdentifier() {
             tokenType == TokenType::IDENTIFIER);
 }
 
+void Parser::switchParentNode(ASTNode* new_parent) {
+    current_parent_ = new_parent;
+    scope_stack_.push_back(new_parent);
+}
+
+void printAST(ASTNode* node, int depth = 0) {
+    if (node == nullptr) {
+        return;
+    }
+
+    // Print indentation based on depth
+    for (int i = 0; i < depth; ++i) {
+        std::cout << "  ";
+    }
+
+    // Print node type and value
+    std::cout << "Type: " << node->getType() << ", Value: " << node->getValue() << std::endl;
+
+    // Print children recursively
+    for (ASTNode* child : node->getChildren()) {
+        printAST(child, depth + 1);
+    }
+}
+
+
 int main() {
     Parser parser("test.qk");
 
-    parser.parse();
+    ASTNode* root = parser.parse();
+
+    printAST(root);
 
     return 0;
 }
