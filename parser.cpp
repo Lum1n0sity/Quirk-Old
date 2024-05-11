@@ -64,9 +64,9 @@ private:
 };
 
 Parser::Parser(const std::string& filename) : lexer_(filename), current_parent_(nullptr) {}
+ASTNode* root = new ASTNode("Program");
 
 ASTNode* Parser::parse() {
-    ASTNode* root = new ASTNode("Program");
     current_parent_ = root;
     scope_stack_.push_back(root);
 
@@ -79,7 +79,6 @@ ASTNode* Parser::parse() {
             case TokenType::KEYWORD:
                 if (token.second == "if") {
                     ASTNode* if_decl = new ASTNode("IF", "if");
-                    current_parent_->add_child(if_decl);
 
                     Condition condition = parseCondition();
 
@@ -180,8 +179,6 @@ ASTNode* Parser::parse() {
         }
     } while (token.first != TokenType::END_OF_FILE);
 
-    // std::cout << root << std::endl;;
-
     return root;
 }
 
@@ -192,6 +189,7 @@ Condition Parser::parseCondition() {
     std::string part1;
     std::string op;
     std::string part2;
+    bool parsingPart1 = true; // Flag to indicate if currently parsing part1
 
     // Get next token
     token = lexer_.getNextToken();
@@ -207,15 +205,12 @@ Condition Parser::parseCondition() {
 
     // Parse condition
     while (token.first != TokenType::CURLY_PAREN) {
-        if (part1.empty()) {
+        if (parsingPart1 && (token.first == TokenType::IDENTIFIER || token.first == TokenType::STRING_LITERAL || token.first == TokenType::NUMERIC_LITERAL || token.first == TokenType::CHAR_LITERAL || token.first == TokenType::BOOL_LITERAL)) {
             part1 = token.second;
-        }
-
-        if (token.first == TokenType::RELATIONAL_OPERATOR && op.empty()) {
+            parsingPart1 = false; // Move to parsing part2
+        } else if (!parsingPart1 && token.first == TokenType::RELATIONAL_OPERATOR && op.empty()) {
             op = token.second;
-        }
-
-        if (part2.empty()) {
+        } else if (!parsingPart1 && (token.first == TokenType::IDENTIFIER || token.first == TokenType::STRING_LITERAL || token.first == TokenType::NUMERIC_LITERAL || token.first == TokenType::CHAR_LITERAL || token.first == TokenType::BOOL_LITERAL)) {
             part2 = token.second;
         }
         
@@ -281,12 +276,11 @@ void printAST(ASTNode* node, int depth = 0) {
     // Print node type and value
     std::cout << "Type: " << node->getType() << ", Value: " << node->getValue() << std::endl;
 
-    // Print children recursively
-    for (ASTNode* child : node->getChildren()) {
-        printAST(child, depth + 1);
+    const std::vector<ASTNode*>& children = node->getChildren();
+    for (ASTNode* child : children) {
+       printAST(child, depth + 1);
     }
 }
-
 
 int main() {
     Parser parser("test.qk");
