@@ -6,4 +6,12 @@ bool _bool = false;
 
 if (_temp == "Hello World") {
     out("Temp is Hello World");
+
+    if (_temp == 1) {
+        out("Temp is 1");
+    }
+}
+
+while (_temp != 5) {
+    out("Loop");
 }
