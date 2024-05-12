@@ -69,6 +69,8 @@ ASTNode* Parser::parse() {
     ASTNode* root = new ASTNode("Program");
     current_parent_ = root;
     scope_stack_.push_back(root);
+    
+    
 
     std::pair<TokenType, std::string> token;
 
@@ -79,7 +81,6 @@ ASTNode* Parser::parse() {
             case TokenType::KEYWORD:
                 if (token.second == "if") {
                     ASTNode* if_decl = new ASTNode("IF", "if");
-                    current_parent_->add_child(if_decl);
 
                     Condition condition = parseCondition();
 
@@ -179,8 +180,6 @@ ASTNode* Parser::parse() {
                 return nullptr;
         }
     } while (token.first != TokenType::END_OF_FILE);
-
-    // std::cout << root << std::endl;;
 
     return root;
 }
