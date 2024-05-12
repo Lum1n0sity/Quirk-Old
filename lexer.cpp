@@ -23,6 +23,7 @@ enum TokenType {
 	CHAR,
 	STRING,
 	BOOL,
+	UNARY_ARITMETIC_OPERATOR,
 	END_OF_FILE,
 	NONE,
 	ERROR,
@@ -84,7 +85,6 @@ class Lexer {
 			} else if (std::isdigit(c)) {
 				tokenValue += c;
 				while (file_.get(c) && std::isdigit(c)) {
-					std::cout << c << std::endl;
 					tokenValue += c;
 				}
 
@@ -167,10 +167,22 @@ class Lexer {
 				}
 			} else if (c == ';') {
 				tokenValue += c;
+				std::cout << "Semicolon" << std::endl;
 				return std::make_pair(TokenType::PUNCTUATION, tokenValue);
 			} else if (isMathOperator(c)) {
 				tokenValue += c;
-				return std::make_pair(TokenType::MATH_OPERATOR, tokenValue);
+				
+				while(file_.get(c) && isMathOperator(c)) {
+					tokenValue += c;
+				}
+
+				file_.unget();
+
+				if (tokenValue.size() > 1) {
+					return std::make_pair(TokenType::UNARY_ARITMETIC_OPERATOR, tokenValue);
+				} else {
+					return std::make_pair(TokenType::MATH_OPERATOR, tokenValue);
+				}
 			} else if (c == ',') {
 				tokenValue += c;
 				return std::make_pair(TokenType::COMMA, tokenValue);
@@ -211,6 +223,7 @@ class Lexer {
 		const std::regex CHAR_REGEX{"char"};
 		const std::regex BOOL_REGEX{"bool"};
 		const std::regex RELATIONAL_OPERATOR_REGEX{"==|!=|<|>|<=|>="};
+		const std::regex UNARY_ARITMETIC_OPERATOR_REGEX{"\\+\\+|--"};
 };
 
 void compileFile(const std::string& filename) {
@@ -220,17 +233,17 @@ void compileFile(const std::string& filename) {
 
 	while(token.first != TokenType::END_OF_FILE) {
 		if (token.first == TokenType::ERROR) {
-			std::cout << token.first << " " << token.second << std::endl;
+			std::cout << "Error: " << token.first << " " << token.second << std::endl;
 			break;
 		}
 
-	    std::cout << token.first << " " << token.second << std::endl;
+		std::cout << token.first << " " << token.second << std::endl;
 		token = lexer.getNextToken();
 	}
 }
 
 // int main() {
 // 	compileFile("test.qk");
-
+// 
 // 	return 0;
 // }

@@ -9,9 +9,19 @@ if (_temp == "Hello World") {
 
     if (_temp == 1) {
         out("Temp is 1");
+    } else {
+        out("Hello World");
+    }
+
+    while (_temp != 9) {
+        out("Temp");
     }
 }
 
 while (_temp != 5) {
     out("Loop");
+}
+
+for (int i = 0; i < 5; i++) {
+    out("Test");
 }
