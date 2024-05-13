@@ -111,7 +111,7 @@ ASTNode* Parser::parse() {
                         ASTNode* error_node = new ASTNode("ERROR", "error");
 
                         root->add_child(error_node);
-                        break;
+                        return nullptr;
                     } else {
                         std::string combinedCondition = condition.part1 + condition.op + condition.part2;
 
@@ -147,7 +147,7 @@ ASTNode* Parser::parse() {
                         ASTNode* error_node = new ASTNode("ERROR", "error");
 
                         root->add_child(error_node);
-                        break;
+                        return nullptr;
                     } else {
                         std::string combinedCondition = condition.part1 + condition.op + condition.part2;
 
