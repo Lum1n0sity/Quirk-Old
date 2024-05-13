@@ -88,12 +88,14 @@ class Lexer {
 					tokenValue += c;
 				}
 
+				file_.unget();
+
 				if (c == '.') {
 					tokenValue += c;
 					while (file_.get(c) && std::isdigit(c)) {
 						tokenValue += c;
 					}
-					
+
 					return std::make_pair(TokenType::NUMERIC_LITERAL, tokenValue);
 				}
 
@@ -105,6 +107,8 @@ class Lexer {
 							tokenValue += c;
 						}
 						
+						file_.unget();
+
 						return std::make_pair(TokenType::NUMERIC_LITERAL, tokenValue);
 					} else {
 						return std::make_pair(TokenType::ERROR, tokenValue);
@@ -167,7 +171,6 @@ class Lexer {
 				}
 			} else if (c == ';') {
 				tokenValue += c;
-				std::cout << "Semicolon" << std::endl;
 				return std::make_pair(TokenType::PUNCTUATION, tokenValue);
 			} else if (isMathOperator(c)) {
 				tokenValue += c;

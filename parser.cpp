@@ -346,14 +346,10 @@ Condition Parser::parseCondition() {
 ForLoopCondition Parser::parseForLoopCondition() {
     std::pair<TokenType, std::string> token;
 
-    std::cout << "Test" << std::endl;
-
     // Initialize condition variables
     std::string initialization;
     std::string condition;
     std::string update;
-
-    std::cout << "Test" << std::endl;
 
     // Get next token
     token = lexer_.getNextToken();
@@ -364,8 +360,6 @@ ForLoopCondition Parser::parseForLoopCondition() {
         return { "", "", "", true }; // Return empty ForLoopCondition struct with error flag set
     }
 
-    std::cout << "Test" << std::endl;
-
     // Parse initialization
     token = lexer_.getNextToken();
 
@@ -374,12 +368,10 @@ ForLoopCondition Parser::parseForLoopCondition() {
         token = lexer_.getNextToken();
     }
 
-    std::cout << "Test" << std::endl;
+    initialization += ';';
 
     // Get next token after SEMICOLON
     token = lexer_.getNextToken();
-
-    std::cout << token.second << std::endl;
 
     // Parse condition
     while (token.first != TokenType::PUNCTUATION) {
@@ -387,18 +379,16 @@ ForLoopCondition Parser::parseForLoopCondition() {
         token = lexer_.getNextToken();
     }
 
-    std::cout << "Test" << std::endl;
+    condition += ';';
 
     // Get next token after SEMICOLON
     token = lexer_.getNextToken();
 
     // Parse update
-    while (token.first != TokenType::CURLY_PAREN) {
+    while (token.first != TokenType::ROUND_PAREN) {
         update += token.second;
         token = lexer_.getNextToken();
     }
-
-    std::cout << "Test" << std::endl;
 
     // Check if all parts are parsed correctly
     if (initialization.empty() || condition.empty() || update.empty()) {
