@@ -245,8 +245,8 @@ void compileFile(const std::string& filename) {
 	}
 }
 
-// int main() {
-// 	compileFile("test.qk");
-// 
-// 	return 0;
-// }
+// 	int main() {
+// 	 	compileFile("test.qk");
+// 	
+// 		return 0;
+// 	}

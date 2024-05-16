@@ -364,6 +364,7 @@ ForLoopCondition Parser::parseForLoopCondition() {
     token = lexer_.getNextToken();
 
     while (token.first != TokenType::PUNCTUATION) {
+        std::cout << token.second << std::endl;
         initialization += token.second;
         token = lexer_.getNextToken();
     }
@@ -379,6 +380,8 @@ ForLoopCondition Parser::parseForLoopCondition() {
         token = lexer_.getNextToken();
     }
 
+    std::cout << "TESt" << std::endl;
+
     condition += ';';
 
     // Get next token after SEMICOLON
@@ -389,6 +392,8 @@ ForLoopCondition Parser::parseForLoopCondition() {
         update += token.second;
         token = lexer_.getNextToken();
     }
+
+    std::cout << "TESt" << std::endl;
 
     // Check if all parts are parsed correctly
     if (initialization.empty() || condition.empty() || update.empty()) {
@@ -489,6 +494,8 @@ int main() {
     Parser parser("test.qk");
 
     parser.Initalize();
+
+    std::cout << "Initalize" << std::endl;
 
     ASTNode* root = parser.parse();
 
