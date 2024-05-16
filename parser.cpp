@@ -364,7 +364,6 @@ ForLoopCondition Parser::parseForLoopCondition() {
     token = lexer_.getNextToken();
 
     while (token.first != TokenType::PUNCTUATION) {
-        std::cout << token.second << std::endl;
         initialization += token.second;
         token = lexer_.getNextToken();
     }
