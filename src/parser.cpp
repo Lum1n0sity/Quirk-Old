@@ -1,92 +1,7 @@
-#include <iostream>
-#include <string>
-#include <fstream>
-#include <regex>
-#include <optional>
-#include "lexer.cpp"
+#include "quirk_compiler/parser.h"
 
-struct Condition {
-    std::string part1;
-    std::string op;
-    std::string part2;
-    bool error;
-};
-
-struct ForLoopCondition {
-    std::string initialization;
-    std::string condition;
-    std::string update;
-    bool error;
-};
-
-// * Abstract Syntax Tree Node Class
-class ASTNode {
-public:
-    ASTNode(std::string type, std::string value = "") : type(type), value(value) {}
-
-    void add_child(ASTNode* node) {
-        children.push_back(node);
-    }
-
-    void set_parent(ASTNode* parent) {
-        parent_ = parent;
-    }
-
-    void set_type(const std::string& newType) {
-        type = newType;
-    }
-
-    void set_value(const std::string& newValue) {
-        value = newValue;
-    }
-
-    ASTNode* get_parent() const {
-        return parent_;
-    }
-
-    std::string getType() const {
-        return type;
-    }
-
-    std::string getValue() const {
-        return value;
-    }
-
-    const std::vector<ASTNode*>& getChildren() const {
-        return children;
-    }
-
-private:
-    std::string type;
-    std::string value;
-    std::vector<ASTNode*> children;
-    ASTNode* parent_;
-};
-
-// * Parser Class
-class Parser {
-public:
-    Parser(const std::string& filename);
-
-    void Initalize();
-    ASTNode* parse();
-    Condition parseCondition();
-    ForLoopCondition parseForLoopCondition();
-private:
-    Lexer lexer_;
-    ASTNode* current_parent_;
-    std::vector<ASTNode*> scope_stack_;
-
-    bool parseVarAssignment(TokenType varLiteralType, std::string varType);
-    std::pair<bool, std::string> isNextTokenLiteralOrIdentifier();
-    void switchParentNode(ASTNode* new_parent);
-    void popParentNode();
-};
-
-// * Initalize Parser
 Parser::Parser(const std::string& filename) : lexer_(filename), current_parent_(nullptr) {}  
 
-// * Initalize Abstract Syntax Tree
 ASTNode* root = new ASTNode("Program");
 
 void Parser::Initalize() {
@@ -302,29 +217,24 @@ ASTNode* Parser::parse() {
 Condition Parser::parseCondition() {
     std::pair<TokenType, std::string> token;
 
-    // Initialize condition variables
     std::string part1;
     std::string op;
     std::string part2;
-    bool parsingPart1 = true; // Flag to indicate if currently parsing part1
+    bool parsingPart1 = true;
 
-    // Get next token
     token = lexer_.getNextToken();
 
-    // Check if token is ROUND_PAREN
     if (token.first != TokenType::ROUND_PAREN) {
         std::cerr << "Syntax error: Expected '('" << std::endl;
-        return { "", "", "", true }; // Return empty Condition struct with error flag set
+        return { "", "", "", true };
     }
 
-    // Get next token
     token = lexer_.getNextToken();
 
-    // Parse condition
     while (token.first != TokenType::CURLY_PAREN) {
         if (parsingPart1 && (token.first == TokenType::IDENTIFIER || token.first == TokenType::STRING_LITERAL || token.first == TokenType::NUMERIC_LITERAL || token.first == TokenType::CHAR_LITERAL || token.first == TokenType::BOOL_LITERAL)) {
             part1 = token.second;
-            parsingPart1 = false; // Move to parsing part2
+            parsingPart1 = false;
         } else if (!parsingPart1 && token.first == TokenType::RELATIONAL_OPERATOR && op.empty()) {
             op = token.second;
         } else if (!parsingPart1 && (token.first == TokenType::IDENTIFIER || token.first == TokenType::STRING_LITERAL || token.first == TokenType::NUMERIC_LITERAL || token.first == TokenType::CHAR_LITERAL || token.first == TokenType::BOOL_LITERAL)) {
@@ -334,7 +244,6 @@ Condition Parser::parseCondition() {
         token = lexer_.getNextToken();
     }
 
-    // Check if all condition parts are parsed correctly
     if (part1.empty() || op.empty() || part2.empty()) {
         std::cerr << "Syntax error: Incomplete condition in 'if' statement! Line: " << lexer_.getCurrentLineNumber() << std::endl;
         return { "", "", "", true };
@@ -346,21 +255,17 @@ Condition Parser::parseCondition() {
 ForLoopCondition Parser::parseForLoopCondition() {
     std::pair<TokenType, std::string> token;
 
-    // Initialize condition variables
     std::string initialization;
     std::string condition;
     std::string update;
 
-    // Get next token
     token = lexer_.getNextToken();
 
-    // Check if token is ROUND_PAREN
     if (token.first != TokenType::ROUND_PAREN) {
         std::cerr << "Syntax error: Expected '('" << std::endl;
         return { "", "", "", true }; // Return empty ForLoopCondition struct with error flag set
     }
 
-    // Parse initialization
     token = lexer_.getNextToken();
 
     while (token.first != TokenType::PUNCTUATION) {
@@ -370,10 +275,8 @@ ForLoopCondition Parser::parseForLoopCondition() {
 
     initialization += ';';
 
-    // Get next token after SEMICOLON
     token = lexer_.getNextToken();
 
-    // Parse condition
     while (token.first != TokenType::PUNCTUATION) {
         condition += token.second;
         token = lexer_.getNextToken();
@@ -382,11 +285,9 @@ ForLoopCondition Parser::parseForLoopCondition() {
     std::cout << "TESt" << std::endl;
 
     condition += ';';
-
-    // Get next token after SEMICOLON
+    
     token = lexer_.getNextToken();
 
-    // Parse update
     while (token.first != TokenType::ROUND_PAREN) {
         update += token.second;
         token = lexer_.getNextToken();
@@ -394,7 +295,6 @@ ForLoopCondition Parser::parseForLoopCondition() {
 
     std::cout << "TESt" << std::endl;
 
-    // Check if all parts are parsed correctly
     if (initialization.empty() || condition.empty() || update.empty()) {
         std::cerr << "Syntax error: Incomplete condition in 'for' loop! Line: " << lexer_.getCurrentLineNumber() << std::endl;
         return { "", "", "", true };
@@ -470,17 +370,15 @@ void Parser::popParentNode() {
     }
 }
 
-void printAST(ASTNode* node, int depth = 0) {
+void printAST(ASTNode* node, int depth) {
     if (node == nullptr) {
         return;
     }
 
-    // Print indentation based on depth
     for (int i = 0; i < depth; ++i) {
         std::cout << "  ";
     }
-
-    // Print node type and value
+ 
     std::cout << "Type: " << node->getType() << ", Value: " << node->getValue() << std::endl;
 
     const std::vector<ASTNode*>& children = node->getChildren();
@@ -488,35 +386,3 @@ void printAST(ASTNode* node, int depth = 0) {
        printAST(child, depth + 1);
     }
 }
-
-int main() {
-    Parser parser("test.qk");
-
-    parser.Initalize();
-
-    std::cout << "Initalize" << std::endl;
-
-    ASTNode* root = parser.parse();
-
-    printAST(root);
-
-    return 0;
-}
-
-/*
-    ASTNode* root = new ASTNode("Program");
-    
-    ASTNode* func_decl = new ASTNode("FunctionDeclaration", "my_function");
-    
-    ASTNode* param_list = new ASTNode("ParameterList");
-    
-    ASTNode* param1 = new ASTNode("Parameter", "param1");
-    ASTNode* param2 = new ASTNode("Parameter", "param2");
-
-    param_list->add_child(param1);
-    param_list->add_child(param2);
-
-    func_decl->add_child(param_list);
-
-    root->add_child(func_decl);
-*/
