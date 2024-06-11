@@ -3,23 +3,25 @@
 #include <fstream>
 #include <regex>
 #include <optional>
-#include "parser.cpp"
-#include "codegen.cpp"
+
+#include "parser.h"
+#include "codegen.h"
 
 int main() {
     Parser parser("test.qk");
 
     parser.Initalize();
 
-    std::cout << "Initalize" << std::endl;
-
     ASTNode* root = parser.parse();
 
-    printAST(root);
+    //printAST(root, 0);
 
-    CodeGen codegen;
-    codegen.generate(root);
-    codegen.printIR();
+    Codegen codegen;
+    codegen.generateCode(root);
+    
+    codegen.getModule()->print(llvm::errs(), nullptr);
+
+    delete root;
 
     return 0;
 }

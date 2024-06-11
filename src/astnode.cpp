@@ -1,6 +1,6 @@
-#include "quirk_compiler/astnode.h"
+#include "astnode.h"
 
-ASTNode::ASTNode(std::string type, std::string value) : type(type), value(value), parent_(nullptr) {}
+ASTNode::ASTNode(std::string type, std::string value, bool procsessed_) : type(type), value(value), parent_(nullptr), processed_(false) {}
 
 void ASTNode::add_child(ASTNode* node) {
     children.push_back(node);

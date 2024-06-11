@@ -5,11 +5,11 @@ find_package(LLVM REQUIRED CONFIG)
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 include(AddLLVM)
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/include/quirk_compiler)
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
-add_executable(QuirkCompilerCpp src/main.cpp src/parser.cpp src/codegen.cpp)
+add_executable(QuirkCompilerCpp src/main.cpp src/parser.cpp src/codegen.cpp src/astnode.cpp)
 
 llvm_map_components_to_libnames(llvm_libs core irreader)
 

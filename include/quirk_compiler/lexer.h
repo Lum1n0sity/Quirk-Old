@@ -38,7 +38,7 @@ public:
     Lexer(const std::string& filename);
     std::pair<TokenType, std::string> getNextToken();
     bool isMathOperator(char c);
-    int getCurrentLineNumber() const;
+    std::string getCurrentLineNumber() const;
     ~Lexer();
 
 private:

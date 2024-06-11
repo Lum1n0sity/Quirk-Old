@@ -6,7 +6,7 @@
 
 class ASTNode {
 public:
-    ASTNode(std::string type, std::string value = "");
+    ASTNode(std::string type, std::string value = "", bool processed_ = false);
 
     void add_child(ASTNode* node);
     void set_parent(ASTNode* parent);
@@ -18,11 +18,15 @@ public:
     std::string getValue() const;
     const std::vector<ASTNode*>& getChildren() const;
 
+    bool isProcessed() const { return processed_; }
+    void setProcessed(bool processed) { processed_ = processed; }
+    
 private:
     std::string type;
     std::string value;
     std::vector<ASTNode*> children;
     ASTNode* parent_;
+    bool processed_;
 };
 
 #endif

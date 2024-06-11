@@ -1,6 +1,4 @@
-// lexer.cpp
-
-#include "quirk_compiler/lexer.h"
+#include "lexer.h"
 
 Lexer::Lexer(const std::string& filename) 
     : filename_(filename), currentPos_(0), lineNumber_(1),
@@ -32,6 +30,7 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
     while (file_.get(c) && std::isspace(c)) {
         if (c == '\n') {
             lineNumber_++;
+            currentPos_ = 0;
         }
     }
 
@@ -40,19 +39,19 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
     }
     
     if (c == '(' || c == ')') {
+        currentPos_ += 1;
         return std::make_pair(TokenType::ROUND_PAREN, std::string(1, c));
     } else if (c == '{' || c == '}') {
-        tokenValue += c;
-        return std::make_pair(TokenType::CURLY_PAREN, tokenValue);
+        return std::make_pair(TokenType::CURLY_PAREN, std::string(1, c));
     } else if (c == '[' || c == ']') {
-        tokenValue += c;
-        return std::make_pair(TokenType::SQUARE_PAREN, tokenValue);
+        return std::make_pair(TokenType::SQUARE_PAREN, std::string(1, c));
     } else if (c == '"') {
         tokenValue += c;
         while (file_.get(c) && c != '"') {
             tokenValue += c;
         }
         tokenValue += c;
+        currentPos_ += tokenValue.size();
         return std::make_pair(TokenType::STRING_LITERAL, tokenValue);
     } else if (c == '\'') {
         tokenValue += c;
@@ -60,6 +59,7 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
             tokenValue += c;
         }
         file_.unget();
+        currentPos_ += tokenValue.size();
         if (std::regex_match(tokenValue, CHAR_LITERAL_REGEX)) {
             return std::make_pair(TokenType::CHAR_LITERAL, tokenValue);
         } else {
@@ -71,11 +71,13 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
             tokenValue += c;
         }
         file_.unget();
-        if (c == '.') {
-            tokenValue += c;
+        if (file_.peek() == '.') {
+            tokenValue += '.';
+            file_.get(c);
             while (file_.get(c) && std::isdigit(c)) {
                 tokenValue += c;
             }
+            currentPos_ += tokenValue.size();
             return std::make_pair(TokenType::NUMERIC_LITERAL, tokenValue);
         }
         if (c == 'e' || c == 'E') {
@@ -86,8 +88,10 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
                     tokenValue += c;
                 }
                 file_.unget();
+                currentPos_ += tokenValue.size();
                 return std::make_pair(TokenType::NUMERIC_LITERAL, tokenValue);
             } else {
+                currentPos_ += tokenValue.size();
                 return std::make_pair(TokenType::ERROR, tokenValue);
             }
         }
@@ -98,6 +102,7 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
             tokenValue += c;
         }
         file_.unget();
+        currentPos_ += tokenValue.size();
         if (std::regex_match(tokenValue, KEYWORD_REGEX)) {
             return std::make_pair(TokenType::KEYWORD, tokenValue);
         } else if (std::regex_match(tokenValue, INT_REGEX)) {
@@ -124,8 +129,10 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
         }
         file_.unget();
         if (tokenValue == "==") {
+            currentPos_ += tokenValue.size();
             return std::make_pair(TokenType::RELATIONAL_OPERATOR, tokenValue);
         } else {
+            currentPos_ += tokenValue.size();
             return std::make_pair(TokenType::ASSIGNMENT, tokenValue);
         }
     } else if (c == '!' || c == '<' || c == '>') {
@@ -134,14 +141,15 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
             tokenValue += c;
         }
         file_.unget();
+        currentPos_ += tokenValue.size();
         if (std::regex_match(tokenValue, RELATIONAL_OPERATOR_REGEX)) {
             return std::make_pair(TokenType::RELATIONAL_OPERATOR, tokenValue);
         } else {
             return std::make_pair(TokenType::ERROR, tokenValue);
         }
     } else if (c == ';') {
-        tokenValue += c;
-        return std::make_pair(TokenType::PUNCTUATION, tokenValue);
+        currentPos_ += 1;
+        return std::make_pair(TokenType::PUNCTUATION, std::string(1, c));
     } else if (isMathOperator(c)) {
         tokenValue += c;
         while (file_.get(c) && isMathOperator(c)) {
@@ -149,13 +157,15 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
         }
         file_.unget();
         if (tokenValue.size() > 1) {
+            currentPos_ += tokenValue.size();
             return std::make_pair(TokenType::UNARY_ARITHMETIC_OPERATOR, tokenValue);
         } else {
+            currentPos_ += tokenValue.size();
             return std::make_pair(TokenType::MATH_OPERATOR, tokenValue);
         }
     } else if (c == ',') {
-        tokenValue += c;
-        return std::make_pair(TokenType::COMMA, tokenValue);
+        currentPos_ += 1;
+        return std::make_pair(TokenType::COMMA, std::string(1, c));
     } else {
         return std::make_pair(TokenType::ERROR, std::string(1, c));
     }
@@ -167,8 +177,8 @@ bool Lexer::isMathOperator(char c) {
     return MATH_OPERATORS.find(c) != std::string::npos;
 }
 
-int Lexer::getCurrentLineNumber() const {
-    return lineNumber_;
+std::string Lexer::getCurrentLineNumber() const {
+    return std::to_string(lineNumber_) + "; " + std::to_string(currentPos_);
 }
 
 Lexer::~Lexer() {

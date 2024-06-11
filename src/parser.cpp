@@ -1,4 +1,7 @@
-#include "quirk_compiler/parser.h"
+#include "parser.h"
+#include "lexer.h"
+
+#include "lexer.cpp"
 
 Parser::Parser(const std::string& filename) : lexer_(filename), current_parent_(nullptr) {}  
 
@@ -282,8 +285,6 @@ ForLoopCondition Parser::parseForLoopCondition() {
         token = lexer_.getNextToken();
     }
 
-    std::cout << "TESt" << std::endl;
-
     condition += ';';
     
     token = lexer_.getNextToken();
@@ -292,8 +293,6 @@ ForLoopCondition Parser::parseForLoopCondition() {
         update += token.second;
         token = lexer_.getNextToken();
     }
-
-    std::cout << "TESt" << std::endl;
 
     if (initialization.empty() || condition.empty() || update.empty()) {
         std::cerr << "Syntax error: Incomplete condition in 'for' loop! Line: " << lexer_.getCurrentLineNumber() << std::endl;
