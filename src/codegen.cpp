@@ -46,8 +46,8 @@ void Codegen::processNode(ASTNode* node) {
             std::cout << std::endl;
         }
     } else if (node->getType() == "VAR_DECLARATION") {
-        std::string varName = node->getChildren()[1]->getValue(); // Assuming second child is the identifier
-        ASTNode* varTypeNode = node->getChildren()[0]; // Assuming first child is the type node
+        std::string varName = node->getChildren()[1]->getValue();
+        ASTNode* varTypeNode = node->getChildren()[0];
         llvm::Type* varType = nullptr;
         if (varTypeNode->getValue() == "INT") {
             varType = llvm::Type::getInt32Ty(context);
@@ -61,7 +61,6 @@ void Codegen::processNode(ASTNode* node) {
             varType = llvm::Type::getInt8Ty(context);
         }
 
-        // Ensure we have a valid function context
         llvm::Function* function = builder.GetInsertBlock()->getParent();
         if (!function) {
             std::cerr << "Error: No valid function context available!" << std::endl;
