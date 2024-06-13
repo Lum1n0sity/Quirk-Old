@@ -15,7 +15,10 @@ public:
     Codegen();
     llvm::Module* getModule() const;
     void generateCode(ASTNode* root);
-
+      
+    std::vector<llvm::BasicBlock *> thenBlocks;
+    std::vector<llvm::BasicBlock *> elseBlocks;
+    std::vector<llvm::BasicBlock *> mergeBlocks;
 private:
     llvm::LLVMContext context;
     llvm::IRBuilder<> builder;
