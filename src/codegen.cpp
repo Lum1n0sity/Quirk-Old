@@ -13,11 +13,17 @@ using namespace llvm;
 
 Codegen::Codegen() : builder(context), module(std::make_unique<Module>("quirk", context))
 {
-  // Create a test function
+  // Create test function
   FunctionType *funcType = FunctionType::get(builder.getVoidTy(), false);
   Function *mainFunc = Function::Create(funcType, Function::ExternalLinkage, "main", module.get());
   BasicBlock *entry = BasicBlock::Create(context, "entry", mainFunc);
   builder.SetInsertPoint(entry);
+
+  // Declare out() function
+  std::vector<llvm::Type*> outArgs;
+  outArgs.push_back(builder.getInt8Ty());
+  FunctionType *outFuncType = FunctionType::get(builder.getVoidTy(), outArgs, false);
+  outFunc = Function::Create(outFuncType, Function::ExternalLinkage, "out", module.get());
 }
 
 Module *Codegen::getModule() const
@@ -109,19 +115,16 @@ void Codegen::processNode(ASTNode *node)
     BasicBlock *elseBB = BasicBlock::Create(context, "else");
     BasicBlock *mergeBB = BasicBlock::Create(context, "ifcont");
 
-    // Store the basic blocks in a vector
     thenBlocks.push_back(thenBB);
     elseBlocks.push_back(elseBB);
     mergeBlocks.push_back(mergeBB);
 
     builder.CreateCondBr(condition, thenBB, elseBB);
 
-    // Generate code for 'then' block
     builder.SetInsertPoint(thenBB);
     dfsGenerateCode(thenBlockNode);
     builder.CreateBr(mergeBB);
 
-    // Generate code for 'else' block
     builder.SetInsertPoint(elseBB);
     if (node->getChildren().size() > 2)
     {
@@ -130,11 +133,17 @@ void Codegen::processNode(ASTNode *node)
     }
     builder.CreateBr(mergeBB);
 
-    // Set insertion point for merge block
     builder.SetInsertPoint(mergeBB);
   } else if (node->getType() == "STATEMENT" && node->getValue() == "out") {
-    ASTNode* argNode = node->getChildren()[0];
-    
+    ASTNode *funcCallNode = node->getChildren()[0];
+    ASTNode *argNode = funcCallNode->getChildren()[0];
+    argNode->set_type("LITERAL");
+
+    llvm::Value *argValue = generateExpression(argNode);
+
+    std::vector<llvm::Value*> args; 
+    args.push_back(argValue);
+    builder.CreateCall(outFunc, args);
   }
 }
 
@@ -178,6 +187,14 @@ llvm::AllocaInst *Codegen::createEntryBlockAlloca(llvm::Function *function, cons
   return tmpB.CreateAlloca(type, 0, varName.c_str());
 }
 
+std::string Codegen::removeSuffix(const std::string& str, std::string suffix) {
+  if (str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0) {
+    return str.substr(0, str.size() - suffix.size());
+  }
+
+  return str;
+}
+
 /*
 Type: Program, Value:
   Type: VAR_DECLARATION, Value:
@@ -188,9 +205,9 @@ Type: Program, Value:
   Type: STATEMENT, Value: if
     Type: CONDITION, Value: _temp=="Hello World"
     Type: CODE_BLOCK, Value:
-      Type: STATEMENT, Value: out
-        Type: FUNCTIONCALL, Value: out
-          Type: LITERAL/IDENTIFIER, Value: "Temp is Hello World"
+        Type: STATEMENT, Value: out
+          Type: FUNCTIONCALL, Value: out
+            Type: LITERAL/IDENTIFIER, Value: "Temp is Hello World"
       Type: STATEMENT, Value: if
         Type: CONDITION, Value: _temp==1
         Type: CODE_BLOCK, Value:

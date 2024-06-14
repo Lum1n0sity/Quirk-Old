@@ -23,7 +23,8 @@ private:
     std::vector<ASTNode*> scope_stack_;
 
     bool parseVarAssignment(TokenType varLiteralType, std::string varType);
-    std::pair<bool, std::string> isNextTokenLiteralOrIdentifier();
+    std::tuple<bool, std::string, std::string> isNextTokenLiteralOrIdentifier();
+    std::string tokenTypeToString(TokenType tokenType);
     void switchParentNode(ASTNode* new_parent);
     void popParentNode();
 };

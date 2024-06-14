@@ -115,13 +115,14 @@ ASTNode* Parser::parse() {
                     token = lexer_.getNextToken();
 
                     if (token.first == TokenType::ROUND_PAREN) {
-                        std::pair<bool, std::string> tokenInfo = isNextTokenLiteralOrIdentifier();
+                        std::tuple<bool, std::string, std::string> tokenInfo = isNextTokenLiteralOrIdentifier();
 
-                        bool isLiteralOrIdentifier = tokenInfo.first;
-                        std::string tokenValue = tokenInfo.second;
+                        bool isLiteralOrIdentifier = std::get<0>(tokenInfo);
+                        std::string tokenType = std::get<1>(tokenInfo);                        
+                        std::string tokenValue = std::get<2>(tokenInfo);
 
                         if (isLiteralOrIdentifier) {
-                            ASTNode* literal_node = new ASTNode("LITERAL/IDENTIFIER", tokenValue);
+                            ASTNode* literal_node = new ASTNode(tokenType, tokenValue);
 
                             functionCall_node->add_child(literal_node);
                             out_node->add_child(functionCall_node);
@@ -343,14 +344,69 @@ bool Parser::parseVarAssignment(TokenType varLiteralType, std::string varType) {
     return true;
 }
 
-std::pair<bool, std::string> Parser::isNextTokenLiteralOrIdentifier() {
+std::tuple<bool, std::string, std::string> Parser::isNextTokenLiteralOrIdentifier() {
     std::pair<TokenType, std::string> token = lexer_.getNextToken();
     TokenType tokenType = token.first;
-    bool isLiteralOrIdentifier (tokenType == TokenType::STRING_LITERAL || tokenType == TokenType::NUMERIC_LITERAL || 
-                                tokenType == TokenType::CHAR_LITERAL || tokenType == TokenType::BOOL_LITERAL || 
-                                tokenType == TokenType::IDENTIFIER);
+    bool isLiteralOrIdentifier = (tokenType == TokenType::STRING_LITERAL ||
+                                  tokenType == TokenType::NUMERIC_LITERAL ||
+                                  tokenType == TokenType::CHAR_LITERAL ||
+                                  tokenType == TokenType::BOOL_LITERAL ||
+                                  tokenType == TokenType::IDENTIFIER);
 
-    return std::make_pair(isLiteralOrIdentifier, token.second);
+    return std::make_tuple(isLiteralOrIdentifier, tokenTypeToString(tokenType), token.second);
+}
+
+std::string Parser::tokenTypeToString(TokenType tokenType) {
+    switch (tokenType) {
+        case TokenType::KEYWORD:
+            return "KEYWORD";
+        case TokenType::IDENTIFIER:
+            return "IDENTIFIER";
+        case TokenType::STRING_LITERAL:
+            return "STRING_LITERAL";
+        case TokenType::CHAR_LITERAL:
+            return "CHAR_LITERAL";
+        case TokenType::NUMERIC_LITERAL:
+            return "NUMERIC_LITERAL";
+        case TokenType::BOOL_LITERAL:
+            return "BOOL_LITERAL";
+        case TokenType::PUNCTUATION:
+            return "PUNCTUATION";
+        case TokenType::ASSIGNMENT:
+            return "ASSIGNMENT";
+        case TokenType::ROUND_PAREN:
+            return "ROUND_PAREN";
+        case TokenType::CURLY_PAREN:
+            return "CURLY_PAREN";
+        case TokenType::SQUARE_PAREN:
+            return "SQUARE_PAREN";
+        case TokenType::RELATIONAL_OPERATOR:
+            return "RELATIONAL_OPERATOR";
+        case TokenType::COMMA:
+            return "COMMA";
+        case TokenType::MATH_OPERATOR:
+            return "MATH_OPERATOR";
+        case TokenType::INT:
+            return "INT";
+        case TokenType::FLOAT:
+            return "FLOAT";
+        case TokenType::CHAR:
+            return "CHAR";
+        case TokenType::STRING:
+            return "STRING";
+        case TokenType::BOOL:
+            return "BOOL";
+        case TokenType::UNARY_ARITHMETIC_OPERATOR:
+            return "UNARY_ARITHMETIC_OPERATOR";
+        case TokenType::END_OF_FILE:
+            return "END_OF_FILE";
+        case TokenType::NONE:
+            return "NONE";
+        case TokenType::ERROR:
+            return "ERROR";
+        default:
+            return "UNKNOWN";
+    }
 }
 
 void Parser::switchParentNode(ASTNode* new_parent) {
