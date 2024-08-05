@@ -110,17 +110,14 @@ void Codegen::processNode(ASTNode *node)
   {
     ASTNode *conditionNode = node->getChildren()[0];
     ASTNode *thenBlockNode = node->getChildren()[1];
+    ASTNode *elseBlockNode = (node->getChildren().size() > 2) ? node->getChildren()[2] : nullptr;
 
     llvm::Value *condition = generateExpression(conditionNode);
 
     Function *function = builder.GetInsertBlock()->getParent();
     BasicBlock *thenBB = BasicBlock::Create(context, "then", function);
-    BasicBlock *elseBB = BasicBlock::Create(context, "else");
-    BasicBlock *mergeBB = BasicBlock::Create(context, "ifcont");
-
-    thenBlocks.push_back(thenBB);
-    elseBlocks.push_back(elseBB);
-    mergeBlocks.push_back(mergeBB);
+    BasicBlock *elseBB = BasicBlock::Create(context, "else", function);
+    BasicBlock *mergeBB = BasicBlock::Create(context, "ifcont", function);
 
     builder.CreateCondBr(condition, thenBB, elseBB);
 
@@ -129,9 +126,7 @@ void Codegen::processNode(ASTNode *node)
     builder.CreateBr(mergeBB);
 
     builder.SetInsertPoint(elseBB);
-    if (node->getChildren().size() > 2)
-    {
-      ASTNode *elseBlockNode = node->getChildren()[2];
+    if (elseBlockNode) {
       dfsGenerateCode(elseBlockNode);
     }
     builder.CreateBr(mergeBB);
