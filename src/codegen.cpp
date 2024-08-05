@@ -11,6 +11,7 @@
 
 using namespace llvm;
 
+// Initalize IRBuilder, model, main function and other std lib functions
 Codegen::Codegen() : builder(context), module(std::make_unique<Module>("quirk", context))
 {
   // Create test function
@@ -26,18 +27,24 @@ Codegen::Codegen() : builder(context), module(std::make_unique<Module>("quirk", 
   outFunc = Function::Create(outFuncType, Function::ExternalLinkage, "out", module.get());
 }
 
+// Return current generated model
 Module *Codegen::getModule() const
 {
   return module.get();
 }
 
+// Initalize code generation
 void Codegen::generateCode(ASTNode *root)
 {
   dfsGenerateCode(root);
-  // Finalize the function
+ 
   builder.CreateRetVoid();
+
+  // Debug
+  // printStringLiterals();
 }
 
+// Travers through Abstract Syntax Tree
 void Codegen::dfsGenerateCode(ASTNode *node)
 {
   processNode(node);
@@ -49,16 +56,12 @@ void Codegen::dfsGenerateCode(ASTNode *node)
   }
 }
 
+// Converts the current ASTNode to LLVM IR
 void Codegen::processNode(ASTNode *node)
 {
   if (node->getType() == "LITERAL")
   {
     llvm::Value *value = generateExpression(node);
-    if (value)
-    {
-      value->print(llvm::errs());
-      std::cout << std::endl;
-    }
   }
   else if (node->getType() == "VAR_DECLARATION")
   {
@@ -147,6 +150,7 @@ void Codegen::processNode(ASTNode *node)
   }
 }
 
+// Evaluates literals of different types and returns the coresponding LLVM constant
 llvm::Value *Codegen::generateExpression(ASTNode *node)
 {
   std::string valueStr = node->getValue();
@@ -160,12 +164,31 @@ llvm::Value *Codegen::generateExpression(ASTNode *node)
     else if (valueStr.front() == '"' && valueStr.back() == '"')
     {
       std::string strValue = valueStr.substr(1, valueStr.size() - 2);
-      return builder.CreateGlobalStringPtr(strValue, "", 0, module.get());
+  
+      // Check if the string literal already exists
+      if (stringLiterals.find(strValue) != stringLiterals.end()) {
+        return stringLiterals[strValue];
+      }
+    
+      // Create new constant
+      llvm::Constant *constant = builder.CreateGlobalStringPtr(strValue, "", 0, module.get());
+      stringLiterals[strValue] = constant;
+      return constant;
     }
     else if (valueStr.front() == '\'' && valueStr.back() == '\'')
     {
       char charvalue = valueStr[1];
-      return llvm::ConstantInt::get(context, llvm::APInt(8, charvalue));
+      
+      // Check if the char literal already exists
+      std::string charStr(1, charvalue);
+      if (charLiterals.find(charStr) != charLiterals.end()) {
+        return charLiterals[charStr];
+      }
+
+      // Create new constant
+      llvm::Constant *constant = llvm::ConstantInt::get(context, llvm::APInt(8, charvalue));
+      charLiterals[charStr] = constant;
+      return constant;
     }
     else if (valueStr.find('.') != std::string::npos)
     {
@@ -178,15 +201,18 @@ llvm::Value *Codegen::generateExpression(ASTNode *node)
       return llvm::ConstantInt::get(context, llvm::APInt(32, value));
     }
   }
+
   return nullptr;
 }
 
+// Allocates memory for each varibale
 llvm::AllocaInst *Codegen::createEntryBlockAlloca(llvm::Function *function, const std::string &varName, llvm::Type *type)
 {
   llvm::IRBuilder<> tmpB(&function->getEntryBlock(), function->getEntryBlock().begin());
   return tmpB.CreateAlloca(type, 0, varName.c_str());
 }
 
+// Removes a specified suffix from a string
 std::string Codegen::removeSuffix(const std::string& str, std::string suffix) {
   if (str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0) {
     return str.substr(0, str.size() - suffix.size());
@@ -195,47 +221,18 @@ std::string Codegen::removeSuffix(const std::string& str, std::string suffix) {
   return str;
 }
 
-/*
-Type: Program, Value:
-  Type: VAR_DECLARATION, Value:
-    Type: VAR_TYPE, Value: STRING
-    Type: IDENTIFIER, Value: _string
-    Type: ASSIGNMENT, Value:
-      Type: LITERAL, Value: "Hello World!"
-  Type: STATEMENT, Value: if
-    Type: CONDITION, Value: _temp=="Hello World"
-    Type: CODE_BLOCK, Value:
-        Type: STATEMENT, Value: out
-          Type: FUNCTIONCALL, Value: out
-            Type: LITERAL/IDENTIFIER, Value: "Temp is Hello World"
-      Type: STATEMENT, Value: if
-        Type: CONDITION, Value: _temp==1
-        Type: CODE_BLOCK, Value:
-          Type: STATEMENT, Value: out
-            Type: FUNCTIONCALL, Value: out
-              Type: LITERAL/IDENTIFIER, Value: "Temp is 1"
-      Type: STATEMENT, Value: else
-        Type: CODE_BLOCK, Value:
-          Type: STATEMENT, Value: out
-            Type: FUNCTIONCALL, Value: out
-              Type: LITERAL/IDENTIFIER, Value: "Hello World"
-      Type: STATEMENT, Value: while
-        Type: CONDITION, Value: _temp!=9
-        Type: CODE_BLOCK, Value:
-          Type: STATEMENT, Value: out
-            Type: FUNCTIONCALL, Value: out
-              Type: LITERAL/IDENTIFIER, Value: "Temp"
-  Type: STATEMENT, Value: while
-    Type: CONDITION, Value: _temp!=5
-    Type: CODE_BLOCK, Value:
-      Type: STATEMENT, Value: out
-        Type: FUNCTIONCALL, Value: out
-          Type: LITERAL/IDENTIFIER, Value: "Loop"
-  Type: STATEMENT, Value: for
-    Type: CONDITON, Value: inti=0;i<5;i++
-    Type: CODE_BLOCK, Value:
-    Type: CODE_BLOCK, Value:
-      Type: STATEMENT, Value: out
-        Type: FUNCTIONCALL, Value: out
-          Type: LITERAL/IDENTIFIER, Value: "Test"
-*/
+void Codegen::printStringLiterals() const {
+  std::cout << "String Literals:" << std::endl;
+  for (const auto &pair : stringLiterals) {
+    std::cout << "String: " << pair.first << " -> ";
+    pair.second->print(llvm::errs());
+    std::cout << std::endl;
+  }
+
+  std::cout << "Char Literals:" << std::endl;
+  for (const auto &pair : charLiterals) {
+    std::cout << "Char: " << pair.first << " -> ";
+    pair.second->print(llvm::errs());
+    std::cout << std::endl;
+  }
+}
