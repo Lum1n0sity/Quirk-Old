@@ -31,6 +31,7 @@ enum TokenType {
     END_OF_FILE,
     NONE,
     ERROR,
+    UNKNOWN,
 };
 
 class Lexer {

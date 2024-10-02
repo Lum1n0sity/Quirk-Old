@@ -31,11 +31,16 @@ ASTNode* Parser::parse() {
                         root->add_child(error_node);
                         return nullptr;
                     } else {
-                        std::string combinedCondition = condition.part1 + condition.op + condition.part2;
+                        ASTNode* condition_node = new ASTNode("CONDITION", "");
+                        ASTNode* left_condition_node = new ASTNode(tokenTypeToString(condition.left.first), condition.left.second);
+                        ASTNode* operator_condition_node = new ASTNode(tokenTypeToString(condition.op.first), condition.op.second);
+                        ASTNode* right_condition_node = new ASTNode(tokenTypeToString(condition.right.first), condition.right.second);
 
-                        ASTNode* condition_node = new ASTNode("CONDITION", combinedCondition);
                         ASTNode* codeBlock_node = new ASTNode("CODE_BLOCK", "");
 
+                        condition_node->add_child(left_condition_node);
+                        condition_node->add_child(operator_condition_node);
+                        condition_node->add_child(right_condition_node);
                         if_node->add_child(condition_node);
                         if_node->add_child(codeBlock_node);
 
@@ -67,9 +72,7 @@ ASTNode* Parser::parse() {
                         root->add_child(error_node);
                         return nullptr;
                     } else {
-                        std::string combinedCondition = condition.part1 + condition.op + condition.part2;
-
-                        ASTNode* condition_node = new ASTNode("CONDITION", combinedCondition);
+                        ASTNode* condition_node = new ASTNode("CONDITION", "");
                         ASTNode* codeBlock_node = new ASTNode("CODE_BLOCK", "");
 
                         while_node->add_child(condition_node);
@@ -221,38 +224,46 @@ ASTNode* Parser::parse() {
 Condition Parser::parseCondition() {
     std::pair<TokenType, std::string> token;
 
-    std::string part1;
-    std::string op;
-    std::string part2;
+    std::pair<TokenType, std::string> left;
+    std::pair<TokenType, std::string> op;
+    std::pair<TokenType, std::string> right;
     bool parsingPart1 = true;
 
     token = lexer_.getNextToken();
 
     if (token.first != TokenType::ROUND_PAREN) {
         std::cerr << "Syntax error: Expected '('" << std::endl;
-        return { "", "", "", true };
+        return { {TokenType::UNKNOWN, ""}, {TokenType::UNKNOWN, ""}, {TokenType::UNKNOWN, ""}, true };
     }
 
     token = lexer_.getNextToken();
 
     while (token.first != TokenType::CURLY_PAREN) {
-        if (parsingPart1 && (token.first == TokenType::IDENTIFIER || token.first == TokenType::STRING_LITERAL || token.first == TokenType::NUMERIC_LITERAL || token.first == TokenType::CHAR_LITERAL || token.first == TokenType::BOOL_LITERAL)) {
-            part1 = token.second;
+        if (parsingPart1 && (token.first == TokenType::IDENTIFIER || 
+                             token.first == TokenType::STRING_LITERAL || 
+                             token.first == TokenType::NUMERIC_LITERAL || 
+                             token.first == TokenType::CHAR_LITERAL || 
+                             token.first == TokenType::BOOL_LITERAL)) {
+            left = token;
             parsingPart1 = false;
-        } else if (!parsingPart1 && token.first == TokenType::RELATIONAL_OPERATOR && op.empty()) {
-            op = token.second;
-        } else if (!parsingPart1 && (token.first == TokenType::IDENTIFIER || token.first == TokenType::STRING_LITERAL || token.first == TokenType::NUMERIC_LITERAL || token.first == TokenType::CHAR_LITERAL || token.first == TokenType::BOOL_LITERAL)) {
-            part2 = token.second;
+        } else if (!parsingPart1 && token.first == TokenType::RELATIONAL_OPERATOR && op.first == TokenType::UNKNOWN) {
+            op = token;
+        } else if (!parsingPart1 && (token.first == TokenType::IDENTIFIER || 
+                                     token.first == TokenType::STRING_LITERAL || 
+                                     token.first == TokenType::NUMERIC_LITERAL || 
+                                     token.first == TokenType::CHAR_LITERAL || 
+                                     token.first == TokenType::BOOL_LITERAL)) {
+            right = token;
         }
-        
+
         token = lexer_.getNextToken();
     }
 
-    if (part1.empty() || op.empty() || part2.empty()) {
+    if (left.first == TokenType::UNKNOWN || op.first == TokenType::UNKNOWN || right.first == TokenType::UNKNOWN) {
         std::cerr << "Syntax error: Incomplete condition in 'if' statement! Line: " << lexer_.getCurrentLineNumber() << std::endl;
-        return { "", "", "", true };
+        return { {TokenType::UNKNOWN, ""}, {TokenType::UNKNOWN, ""}, {TokenType::UNKNOWN, ""}, true };
     } else {
-        return { part1, op, part2, false };
+        return { left, op, right, false };
     }
 }
 

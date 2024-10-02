@@ -27,6 +27,7 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
     std::string tokenValue;
     char c;
 
+    // Skip whitespace and newlines
     while (file_.get(c) && std::isspace(c)) {
         if (c == '\n') {
             lineNumber_++;
@@ -34,18 +35,29 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
         }
     }
 
+    // End of file
     if (file_.eof()) {
         return std::make_pair(TokenType::END_OF_FILE, "");
     }
-    
+
+    // Handle single character tokens
     if (c == '(' || c == ')') {
-        currentPos_ += 1;
+        currentPos_++;
         return std::make_pair(TokenType::ROUND_PAREN, std::string(1, c));
     } else if (c == '{' || c == '}') {
         return std::make_pair(TokenType::CURLY_PAREN, std::string(1, c));
     } else if (c == '[' || c == ']') {
         return std::make_pair(TokenType::SQUARE_PAREN, std::string(1, c));
-    } else if (c == '"') {
+    } else if (c == ';') {
+        currentPos_++;
+        return std::make_pair(TokenType::PUNCTUATION, std::string(1, c));
+    } else if (c == ',') {
+        currentPos_++;
+        return std::make_pair(TokenType::COMMA, std::string(1, c));
+    }
+
+    // Handle string literals
+    if (c == '"') {
         tokenValue += c;
         while (file_.get(c) && c != '"') {
             tokenValue += c;
@@ -53,19 +65,25 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
         tokenValue += c;
         currentPos_ += tokenValue.size();
         return std::make_pair(TokenType::STRING_LITERAL, tokenValue);
-    } else if (c == '\'') {
+    }
+
+    // Handle character literals
+    if (c == '\'') {
         tokenValue += c;
-        while (file_.get(c) && c != ';') {
+        while (file_.get(c) && c != '\'') {
             tokenValue += c;
         }
-        file_.unget();
+        tokenValue += c;
         currentPos_ += tokenValue.size();
         if (std::regex_match(tokenValue, CHAR_LITERAL_REGEX)) {
             return std::make_pair(TokenType::CHAR_LITERAL, tokenValue);
         } else {
             return std::make_pair(TokenType::ERROR, tokenValue);
         }
-    } else if (std::isdigit(c)) {
+    }
+
+    // Handle numeric literals
+    if (std::isdigit(c)) {
         tokenValue += c;
         while (file_.get(c) && std::isdigit(c)) {
             tokenValue += c;
@@ -96,7 +114,10 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
             }
         }
         return std::make_pair(TokenType::NUMERIC_LITERAL, tokenValue);
-    } else if (std::isalpha(c) || c == '_') {
+    }
+
+    // Handle identifiers and keywords
+    if (std::isalpha(c) || c == '_') {
         tokenValue += c;
         while (file_.get(c) && (std::isalnum(c) || c == '_')) {
             tokenValue += c;
@@ -105,52 +126,39 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
         currentPos_ += tokenValue.size();
         if (std::regex_match(tokenValue, KEYWORD_REGEX)) {
             return std::make_pair(TokenType::KEYWORD, tokenValue);
-        } else if (std::regex_match(tokenValue, INT_REGEX)) {
-            return std::make_pair(TokenType::INT, tokenValue);
-        } else if (std::regex_match(tokenValue, FLOAT_REGEX)) {
-            return std::make_pair(TokenType::FLOAT, tokenValue);
-        } else if (std::regex_match(tokenValue, STRING_REGEX)) {
-            return std::make_pair(TokenType::STRING, tokenValue);
-        } else if (std::regex_match(tokenValue, CHAR_REGEX)) {
-            return std::make_pair(TokenType::CHAR, tokenValue);
-        } else if (std::regex_match(tokenValue, BOOL_REGEX)) {
-            return std::make_pair(TokenType::BOOL, tokenValue);
-        } else if (std::regex_match(tokenValue, BOOL_LITERAL_REGEX)) {
-            return std::make_pair(TokenType::BOOL_LITERAL, tokenValue);
         } else if (std::regex_match(tokenValue, IDENTIFIER_REGEX)) {
             return std::make_pair(TokenType::IDENTIFIER, tokenValue);
         } else {
             return std::make_pair(TokenType::ERROR, tokenValue);
         }
-    } else if (c == '=') {
+    }
+
+    // Handle relational operators
+    if (c == '=' || c == '!' || c == '<' || c == '>') {
         tokenValue += c;
-        while (file_.get(c) && c == '=') {
+        if (file_.get(c) && c == '=') {
             tokenValue += c;
-        }
-        file_.unget();
-        if (tokenValue == "==") {
             currentPos_ += tokenValue.size();
             return std::make_pair(TokenType::RELATIONAL_OPERATOR, tokenValue);
-        } else {
-            currentPos_ += tokenValue.size();
-            return std::make_pair(TokenType::ASSIGNMENT, tokenValue);
-        }
-    } else if (c == '!' || c == '<' || c == '>') {
-        tokenValue += c;
-        while (file_.get(c) && c == '=') {
-            tokenValue += c;
         }
         file_.unget();
         currentPos_ += tokenValue.size();
-        if (std::regex_match(tokenValue, RELATIONAL_OPERATOR_REGEX)) {
+        // Handle relational operators
+        if (tokenValue == "==" || tokenValue == "!=" || tokenValue == "<" || tokenValue == ">" || tokenValue == "<=" || tokenValue == ">=") {
             return std::make_pair(TokenType::RELATIONAL_OPERATOR, tokenValue);
-        } else {
-            return std::make_pair(TokenType::ERROR, tokenValue);
         }
-    } else if (c == ';') {
-        currentPos_ += 1;
-        return std::make_pair(TokenType::PUNCTUATION, std::string(1, c));
-    } else if (isMathOperator(c)) {
+        // If not a valid relational operator, it should be treated as an error
+        return std::make_pair(TokenType::ERROR, tokenValue);
+    }
+
+    // Handle assignment operator
+    if (c == '=') {
+        currentPos_++;
+        return std::make_pair(TokenType::ASSIGNMENT, "=");
+    }
+
+    // Handle math operators
+    if (isMathOperator(c)) {
         tokenValue += c;
         while (file_.get(c) && isMathOperator(c)) {
             tokenValue += c;
@@ -163,14 +171,10 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
             currentPos_ += tokenValue.size();
             return std::make_pair(TokenType::MATH_OPERATOR, tokenValue);
         }
-    } else if (c == ',') {
-        currentPos_ += 1;
-        return std::make_pair(TokenType::COMMA, std::string(1, c));
-    } else {
-        return std::make_pair(TokenType::ERROR, std::string(1, c));
     }
 
-    return std::make_pair(TokenType::NONE, "");
+    // If none of the above, return an error
+    return std::make_pair(TokenType::ERROR, std::string(1, c));
 }
 
 bool Lexer::isMathOperator(char c) {

@@ -114,6 +114,10 @@ void Codegen::processNode(ASTNode *node)
 
     llvm::Value *condition = generateExpression(conditionNode);
 
+    if (!condition) {
+      std::cerr << "Error: condition is null in if statement generation! \n";
+    }
+
     Function *function = builder.GetInsertBlock()->getParent();
     BasicBlock *thenBB = BasicBlock::Create(context, "then", function);
     BasicBlock *elseBB = BasicBlock::Create(context, "else", function);

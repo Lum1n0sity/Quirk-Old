@@ -14,12 +14,12 @@ int main() {
 
     ASTNode* root = parser.parse();
 
-//    printAST(root, 0);
+    printAST(root, 0);
 
-    Codegen codegen;
-    codegen.generateCode(root);
+//    Codegen codegen;
+//    codegen.generateCode(root);
     
-    codegen.getModule()->print(llvm::errs(), nullptr);
+//    codegen.getModule()->print(llvm::errs(), nullptr);
 
     delete root;
 

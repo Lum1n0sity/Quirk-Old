@@ -2,11 +2,12 @@
 #define CONDITION_H
 
 #include <string>
+#include "lexer.h"
 
 struct Condition {
-    std::string part1;
-    std::string op;
-    std::string part2;
+    std::pair<TokenType, std::string> left;
+    std::pair<TokenType, std::string> op;
+    std::pair<TokenType, std::string> right;
     bool error;
 };
 

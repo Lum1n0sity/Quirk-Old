@@ -31,6 +31,7 @@ private:
     llvm::Value* generateExpression(ASTNode* node);
     llvm::AllocaInst* createEntryBlockAlloca(llvm::Function* function, const std::string& varName, llvm::Type* type);
     std::string removeSuffix(const std::string& str, std::string suffix);
+//    llvm::Value* generateCondition(ASTNode* node);
 
     std::unordered_map<std::string, llvm::Constant*> stringLiterals;
     std::unordered_map<std::string, llvm::Constant*> charLiterals;
