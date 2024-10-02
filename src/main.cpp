@@ -11,15 +11,13 @@ int main() {
     Parser parser("test.qk");
 
     parser.Initalize();
-
+ 
     ASTNode* root = parser.parse();
 
     printAST(root, 0);
-
-//    Codegen codegen;
-//    codegen.generateCode(root);
-    
-//    codegen.getModule()->print(llvm::errs(), nullptr);
+  
+    // Codegen codegenInstance;
+    // codegenInstance.ConvertAST(root);
 
     delete root;
 

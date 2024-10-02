@@ -116,45 +116,61 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
         return std::make_pair(TokenType::NUMERIC_LITERAL, tokenValue);
     }
 
-    // Handle identifiers and keywords
+    // Handle identifiers, keywords and variable types
     if (std::isalpha(c) || c == '_') {
-        tokenValue += c;
-        while (file_.get(c) && (std::isalnum(c) || c == '_')) {
-            tokenValue += c;
-        }
-        file_.unget();
-        currentPos_ += tokenValue.size();
-        if (std::regex_match(tokenValue, KEYWORD_REGEX)) {
-            return std::make_pair(TokenType::KEYWORD, tokenValue);
-        } else if (std::regex_match(tokenValue, IDENTIFIER_REGEX)) {
-            return std::make_pair(TokenType::IDENTIFIER, tokenValue);
-        } else {
-            return std::make_pair(TokenType::ERROR, tokenValue);
-        }
+      tokenValue += c;
+      while (file_.get(c) && (std::isalnum(c) || c == '_')) {
+          tokenValue += c;
+      }
+      file_.unget();
+      currentPos_ += tokenValue.size();
+      
+      // Check for variable types
+      if (std::regex_match(tokenValue, INT_REGEX)) {
+        return std::make_pair(TokenType::INT, tokenValue);
+      } else if (std::regex_match(tokenValue, FLOAT_REGEX)) {
+        return std::make_pair(TokenType::FLOAT, tokenValue);
+      } else if (std::regex_match(tokenValue, STRING_REGEX)) {
+        return std::make_pair(TokenType::STRING, tokenValue);
+      } else if (std::regex_match(tokenValue, CHAR_REGEX)) {
+        return std::make_pair(TokenType::CHAR, tokenValue);
+      } else if (std::regex_match(tokenValue, BOOL_REGEX)) {
+        return std::make_pair(TokenType::BOOL, tokenValue);
+      }
+
+      // Check for keywords
+      if (std::regex_match(tokenValue, KEYWORD_REGEX)) {
+        return std::make_pair(TokenType::KEYWORD, tokenValue);
+      }
+
+      // Check for identifiers
+      if (std::regex_match(tokenValue, IDENTIFIER_REGEX)) {
+        return std::make_pair(TokenType::IDENTIFIER, tokenValue);
+      } else {
+        return std::make_pair(TokenType::ERROR, tokenValue);
+      }
     }
 
     // Handle relational operators
     if (c == '=' || c == '!' || c == '<' || c == '>') {
+      tokenValue += c;
+      if (file_.get(c) && c == '=') {
         tokenValue += c;
-        if (file_.get(c) && c == '=') {
-            tokenValue += c;
-            currentPos_ += tokenValue.size();
-            return std::make_pair(TokenType::RELATIONAL_OPERATOR, tokenValue);
-        }
-        file_.unget();
         currentPos_ += tokenValue.size();
-        // Handle relational operators
-        if (tokenValue == "==" || tokenValue == "!=" || tokenValue == "<" || tokenValue == ">" || tokenValue == "<=" || tokenValue == ">=") {
-            return std::make_pair(TokenType::RELATIONAL_OPERATOR, tokenValue);
+        return std::make_pair(TokenType::RELATIONAL_OPERATOR, tokenValue);
+      } else {
+        file_.unget();
+        if (tokenValue == "=") {
+          currentPos_ += tokenValue.size();
+          return std::make_pair(TokenType::ASSIGNMENT, tokenValue);
+        } else if (tokenValue == "!") {
+          currentPos_ += tokenValue.size();
+          return std::make_pair(TokenType::ERROR, tokenValue);
+        } else {
+          currentPos_ += tokenValue.size();
+          return std::make_pair(TokenType::RELATIONAL_OPERATOR, tokenValue);
         }
-        // If not a valid relational operator, it should be treated as an error
-        return std::make_pair(TokenType::ERROR, tokenValue);
-    }
-
-    // Handle assignment operator
-    if (c == '=') {
-        currentPos_++;
-        return std::make_pair(TokenType::ASSIGNMENT, "=");
+      }
     }
 
     // Handle math operators

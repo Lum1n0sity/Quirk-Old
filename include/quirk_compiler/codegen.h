@@ -2,42 +2,73 @@
 #define CODEGEN_H
 
 #include "astnode.h"
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/Module.h>
-#include <llvm/IR/Value.h>
 #include <memory>
-#include <unordered_map>
 #include <string>
+#include <vector>
+
+enum CodegenType {
+  FUNCTION,
+  VARIABLE,
+  LITERAL,
+  BINARY_OP,
+  UNARY_OP,
+  ASSIGNMENT_CT,
+  CONTROL_FLOW,
+};
 
 class Codegen {
 public:
-    Codegen();
-    llvm::Module* getModule() const;
-    void generateCode(ASTNode* root);
-      
-    std::vector<llvm::BasicBlock *> thenBlocks;
-    std::vector<llvm::BasicBlock *> elseBlocks;
-    std::vector<llvm::BasicBlock *> mergeBlocks;
+  Codegen() : type(FUNCTION), value(""), parent_(nullptr), processed_(false) {}
+
+  Codegen(CodegenType type, std::string value = "", bool processed_ = false)
+    : type(type), value(value), parent_(nullptr), processed_(processed_) {};
+
+  void add_child(std::shared_ptr<Codegen> node) {
+    children.push_back(node);
+  };
+
+  void set_parent(std::shared_ptr<Codegen> parent) {
+    parent_ = parent;
+  };
+
+  void set_type(CodegenType newType) {
+    type = newType;
+  };
+
+  void set_value(const std::string& newValue) {
+    value = newValue;
+  };
+
+  std::shared_ptr<Codegen> get_parent() const {
+    return parent_;
+  }
+
+  CodegenType get_type() const {
+    return type;
+  }
+
+  std::string get_value() const {
+    return value;
+  }
+
+  const std::vector<std::shared_ptr<Codegen>>& get_children() const {
+    return children;  
+  }
+
+  void ConvertAST(ASTNode* ast);
+
+  bool isProcessed() const { return processed_; }
+  void setProcessed(bool processed) { processed_ = processed; }
+
 private:
-    llvm::LLVMContext context;
-    llvm::IRBuilder<> builder;
-    std::unique_ptr<llvm::Module> module;
-    std::unordered_map<std::string, llvm::Value*> namedValues;
-    llvm::Function* outFunc;
+  void dfsAST(ASTNode* node);
+  void processNode(ASTNode* node);
 
-    void dfsGenerateCode(ASTNode* node);
-    void processNode(ASTNode* node);
-    llvm::Value* generateExpression(ASTNode* node);
-    llvm::AllocaInst* createEntryBlockAlloca(llvm::Function* function, const std::string& varName, llvm::Type* type);
-    std::string removeSuffix(const std::string& str, std::string suffix);
-//    llvm::Value* generateCondition(ASTNode* node);
-
-    std::unordered_map<std::string, llvm::Constant*> stringLiterals;
-    std::unordered_map<std::string, llvm::Constant*> charLiterals;
-
-    // Debug
-    void printStringLiterals() const;
+  CodegenType type;
+  std::string value;
+  std::vector<std::shared_ptr<Codegen>> children;
+  std::shared_ptr<Codegen> parent_;
+  bool processed_;
 };
 
 #endif
