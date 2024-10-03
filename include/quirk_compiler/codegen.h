@@ -16,6 +16,29 @@ enum CodegenType {
   CONTROL_FLOW,
 };
 
+class Instruction {
+public:
+  std::string operation;
+  std::string lhs;
+  std::string rhs;
+
+  Instruction(const std::string& op, const std::string& left, const std::string& right)
+    : operation(op), lhs(left), rhs(right) {}
+
+  std::string toString() const {
+    if (operation == "assign") {
+      return lhs + " = " + rhs;
+    } else if (operation == "br") {
+      return "br " + lhs + ", label" + rhs;
+    } else if (operation == "call") {
+      return "call " + lhs + "(" + rhs + ")";
+    } else if (operation == "label") {
+      return lhs + ":";
+    }
+    return "";
+  }
+};
+
 class Codegen {
 public:
   Codegen() : type(FUNCTION), value(""), parent_(nullptr), processed_(false) {}
@@ -60,15 +83,29 @@ public:
   bool isProcessed() const { return processed_; }
   void setProcessed(bool processed) { processed_ = processed; }
 
+  void addInstruction(const Instruction& instr) {
+    instructions.push_back(instr);
+  }
+
+  const std::vector<Instruction>& getInstructions() const {
+    return instructions;
+  }
+
+  void printInstructions() const;
 private:
   void dfsAST(ASTNode* node);
   void processNode(ASTNode* node);
+  std::string createTemporary() { return "%t" + std::to_string(temporaries_counter++); }
+
+  int temporaries_counter = 0;
 
   CodegenType type;
   std::string value;
   std::vector<std::shared_ptr<Codegen>> children;
   std::shared_ptr<Codegen> parent_;
   bool processed_;
+
+  std::vector<Instruction> instructions;
 };
 
 #endif

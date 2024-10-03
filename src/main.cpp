@@ -16,8 +16,10 @@ int main() {
 
     printAST(root, 0);
   
-    // Codegen codegenInstance;
-    // codegenInstance.ConvertAST(root);
+    // Codegen codegen;
+    // codegen.ConvertAST(root);
+
+    // codegen.printInstructions();
 
     delete root;
 
