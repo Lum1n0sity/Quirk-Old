@@ -19,11 +19,8 @@ ASTNode *Parser::parse() {
   do {
     token = lexer_.getNextToken();
 
-    // std::cout << token.first << " " << token.second << std::endl;
-
     switch (token.first) {
     case TokenType::KEYWORD:
-      // std::cout << token.first << " " << token.second << std::endl;
       if (token.second == "if") {
         ASTNode *if_node = new ASTNode("STATEMENT", "if");
 
@@ -273,7 +270,7 @@ Condition Parser::parseCondition() {
     // Get the next token for the condition parsing
     token = lexer_.getNextToken();
 
-    while (token.first != TokenType::ROUND_PAREN) {  // Change this to check for ROUND_PAREN
+    while (token.first != TokenType::ROUND_PAREN) {
         if (parsingPart1 && (token.first == TokenType::IDENTIFIER ||
                              token.first == TokenType::STRING_LITERAL ||
                              token.first == TokenType::NUMERIC_LITERAL ||
@@ -281,7 +278,7 @@ Condition Parser::parseCondition() {
                              token.first == TokenType::BOOL_LITERAL)) {
             left = token;  // Capture the left side of the condition
             parsingPart1 = false;  // Switch to looking for operator next
-        } else if (!parsingPart1 && token.first == TokenType::RELATIONAL_OPERATOR && op.first == TokenType::UNKNOWN) {
+        } else if (!parsingPart1 && token.first == TokenType::RELATIONAL_OPERATOR) {
             op = token;  // Capture the operator
         } else if (!parsingPart1 && (token.first == TokenType::IDENTIFIER ||
                                      token.first == TokenType::STRING_LITERAL ||
@@ -363,7 +360,7 @@ bool Parser::parseVarAssignment(TokenType varLiteralType, std::string varType) {
   ASTNode *identifier_node = new ASTNode("IDENTIFIER", "");
   ASTNode *type_node = new ASTNode("VAR_TYPE", varType);
   ASTNode *assignment_node = new ASTNode("ASSIGNMENT", "");
-  ASTNode *literal_node = new ASTNode("LITERAL", "");
+  ASTNode *literal_node = new ASTNode(tokenTypeToString(varLiteralType), "");
 
   token = lexer_.getNextToken();
   if (token.first != TokenType::IDENTIFIER) {

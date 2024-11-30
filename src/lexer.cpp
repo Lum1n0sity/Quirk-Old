@@ -138,8 +138,6 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
   
     currentPos_ += tokenValue.size();
 
-    std::cout << tokenValue << std::endl;
-
     // Check for variable types
     if (std::regex_match(tokenValue, INT_REGEX)) {
       return std::make_pair(TokenType::INT, tokenValue);

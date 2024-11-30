@@ -14,12 +14,11 @@ int main() {
  
     ASTNode* root = parser.parse();
 
-    printAST(root, 0);
+    // printAST(root, 0);
   
-    // Codegen codegen;
-    // codegen.ConvertAST(root);
-
-    // codegen.printInstructions();
+    Codegen codegen;
+    codegen.ConvertAST(root);
+    codegen.printInstructions();
 
     delete root;
 

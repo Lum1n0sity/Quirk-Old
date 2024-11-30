@@ -5,107 +5,79 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <iostream>
+#include <variant>
 
-enum CodegenType {
-  FUNCTION,
-  VARIABLE,
-  LITERAL,
-  BINARY_OP,
-  UNARY_OP,
-  ASSIGNMENT_CT,
-  CONTROL_FLOW,
+class CodegenElement {
+public:
+  virtual ~CodegenElement() = default;
+  virtual void print(int depth = 0) const = 0;
 };
 
-class Instruction {
+class Instruction : public CodegenElement {
 public:
   std::string operation;
-  std::string lhs;
-  std::string rhs;
+  std::string instruction;
+  std::vector<std::shared_ptr<CodegenElement>> children;
+  Instruction* parent_;
 
-  Instruction(const std::string& op, const std::string& left, const std::string& right)
-    : operation(op), lhs(left), rhs(right) {}
+  Instruction(const std::string& op, const std::string& instr = "")
+    : operation(op), instruction(instr) {}
 
-  std::string toString() const {
-    if (operation == "assign") {
-      return lhs + " = " + rhs;
-    } else if (operation == "br") {
-      return "br " + lhs + ", label" + rhs;
-    } else if (operation == "call") {
-      return "call " + lhs + "(" + rhs + ")";
-    } else if (operation == "label") {
-      return lhs + ":";
+  void insertAfter(std::string insertAfter, std::string toInsert) {
+    size_t pos = instruction.find(insertAfter);
+
+    if (pos != std::string::npos) {
+      pos += insertAfter.length();
+
+      instruction.insert(pos, toInsert);
+    } else {
+      std::cerr << "Could not find the substring to insert after!" << std::endl;
     }
-    return "";
+  };
+
+  void print(int depth = 0) const override {
+    std::string indent(depth, ' ');
+  
+    if (!instruction.empty()) {
+      std::cout << indent << instruction << std::endl;
+    }
+
+    for (const auto& child : children) {
+      child->print(depth + 2);
+    }
+  }
+
+  void addElement(std::shared_ptr<CodegenElement> element) {
+    children.push_back(element);
   }
 };
 
 class Codegen {
 public:
-  Codegen() : type(FUNCTION), value(""), parent_(nullptr), processed_(false) {}
+  Codegen() : temporaries_counter(0), labels_counter(0), parent_(nullptr) {}
 
-  Codegen(CodegenType type, std::string value = "", bool processed_ = false)
-    : type(type), value(value), parent_(nullptr), processed_(processed_) {};
+  std::shared_ptr<Instruction> rootIR;
+  std::shared_ptr<Instruction> current_parent;
+  std::shared_ptr<Instruction> last_parent;
 
-  void add_child(std::shared_ptr<Codegen> node) {
-    children.push_back(node);
-  };
-
-  void set_parent(std::shared_ptr<Codegen> parent) {
-    parent_ = parent;
-  };
-
-  void set_type(CodegenType newType) {
-    type = newType;
-  };
-
-  void set_value(const std::string& newValue) {
-    value = newValue;
-  };
-
-  std::shared_ptr<Codegen> get_parent() const {
-    return parent_;
-  }
-
-  CodegenType get_type() const {
-    return type;
-  }
-
-  std::string get_value() const {
-    return value;
-  }
-
-  const std::vector<std::shared_ptr<Codegen>>& get_children() const {
-    return children;  
-  }
-
+  void Init();
   void ConvertAST(ASTNode* ast);
 
-  bool isProcessed() const { return processed_; }
-  void setProcessed(bool processed) { processed_ = processed; }
-
-  void addInstruction(const Instruction& instr) {
-    instructions.push_back(instr);
-  }
-
-  const std::vector<Instruction>& getInstructions() const {
-    return instructions;
-  }
-
-  void printInstructions() const;
+  void printInstructions() { rootIR->print(); }
+  std::shared_ptr<Instruction> findInstruction(std::shared_ptr<CodegenElement> root, std::shared_ptr<Instruction> isntr);
 private:
   void dfsAST(ASTNode* node);
-  void processNode(ASTNode* node);
+  std::string processNode(ASTNode* node, bool return_string);
+  void convertCondition(ASTNode* node);
   std::string createTemporary() { return "%t" + std::to_string(temporaries_counter++); }
+  std::string createLabel(std::string labelStart, int add) { return "%" + labelStart + std::to_string(labels_counter + add); }
+  void switchParent(std::shared_ptr<Instruction> parent);
+  void popParent();
 
   int temporaries_counter = 0;
-
-  CodegenType type;
-  std::string value;
-  std::vector<std::shared_ptr<Codegen>> children;
-  std::shared_ptr<Codegen> parent_;
-  bool processed_;
-
-  std::vector<Instruction> instructions;
+  int labels_counter = 0;
+  Codegen* parent_;
 };
 
 #endif
