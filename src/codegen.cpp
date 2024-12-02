@@ -44,7 +44,6 @@ void Codegen::dfsAST(ASTNode *node) {
 std::string Codegen::processNode(ASTNode *node, bool return_string) {
   std::string nodeType = node->getType();
 
-  // TODO: Implement IR conversion for standalone literals
   if (nodeType == "VAR_DECLARATION") {
     ASTNode* assignmentNode = node->getChildren()[2];
 
@@ -153,6 +152,9 @@ std::string Codegen::processNode(ASTNode *node, bool return_string) {
     std::shared_ptr<Instruction> updatedBrInstruction;
 
     if (elseifNodeFound && elseifNode != nullptr) {
+      std::shared_ptr<Instruction> elseifSectionLabel = std::make_shared<Instruction>("label", elseifLabel);
+      current_parent->addElement(elseifSectionLabel);
+
       ASTNode *elseifCondition = elseifNode->getChildren()[0];
       convertCondition(elseifCondition);
 
