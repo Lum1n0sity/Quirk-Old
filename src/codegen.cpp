@@ -1,237 +1,291 @@
-#include <llvm/IR/Constants.h>
-#include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/Module.h>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/ADT/APInt.h>
-#include <llvm/IR/Value.h>
-#include <llvm/IR/Type.h>
-#include <iostream>
-#include "astnode.h"
 #include "codegen.h"
+#include "astnode.h"
+#include <iostream>
 
-using namespace llvm;
-
-// Initalize IRBuilder, model, main function and other std lib functions
-Codegen::Codegen() : builder(context), module(std::make_unique<Module>("quirk", context))
-{
-  // Create test function
-  FunctionType *funcType = FunctionType::get(builder.getVoidTy(), false);
-  Function *mainFunc = Function::Create(funcType, Function::ExternalLinkage, "main", module.get());
-  BasicBlock *entry = BasicBlock::Create(context, "entry", mainFunc);
-  builder.SetInsertPoint(entry);
-
-  // Declare out() function
-  std::vector<llvm::Type*> outArgs;
-  outArgs.push_back(builder.getInt8Ty());
-  FunctionType *outFuncType = FunctionType::get(builder.getVoidTy(), outArgs, false);
-  outFunc = Function::Create(outFuncType, Function::ExternalLinkage, "out", module.get());
+void Codegen::Init() {
+  rootIR = std::make_shared<Instruction>("root");
+  current_parent = rootIR;
 }
 
-// Return current generated model
-Module *Codegen::getModule() const
-{
-  return module.get();
-}
-
-// Initalize code generation
-void Codegen::generateCode(ASTNode *root)
-{
-  dfsGenerateCode(root);
- 
-  builder.CreateRetVoid();
-
-  // Debug
-  // printStringLiterals();
-}
-
-// Travers through Abstract Syntax Tree
-void Codegen::dfsGenerateCode(ASTNode *node)
-{
-  processNode(node);
-
-  const std::vector<ASTNode *> &children = node->getChildren();
-  for (ASTNode *child : children)
-  {
-    dfsGenerateCode(child);
+void Codegen::ConvertAST(ASTNode *ast) {
+  Init();
+  if (ast != nullptr) {
+    dfsAST(ast);
+  } else {
+    std::cerr << "AST is null!" << std::endl;
+    std::terminate();
   }
 }
 
-// Converts the current ASTNode to LLVM IR
-void Codegen::processNode(ASTNode *node)
-{
-  if (node->getType() == "LITERAL")
-  {
-    llvm::Value *value = generateExpression(node);
+void Codegen::dfsAST(ASTNode *node) {
+  if (node == nullptr) {
+    std::cerr << "No nodes for dfs!" << std::endl;
+    std::terminate();
   }
-  else if (node->getType() == "VAR_DECLARATION")
-  {
-    std::string varName = node->getChildren()[1]->getValue();
-    ASTNode *varTypeNode = node->getChildren()[0];
-    llvm::Type *varType = nullptr;
-    if (varTypeNode->getValue() == "INT")
-    {
-      varType = llvm::Type::getInt32Ty(context);
-    }
-    else if (varTypeNode->getValue() == "FLOAT")
-    {
-      varType = llvm::Type::getFloatTy(context);
-    }
-    else if (varTypeNode->getValue() == "BOOL")
-    {
-      varType = llvm::Type::getInt1Ty(context);
-    }
-    else if (varTypeNode->getValue() == "CHAR")
-    {
-      varType = llvm::Type::getInt8Ty(context);
-    }
-    else if (varTypeNode->getValue() == "STRING")
-    {
-      varType = llvm::Type::getInt8Ty(context);
-    }
 
-    llvm::Function *function = builder.GetInsertBlock()->getParent();
-    if (!function)
-    {
-      std::cerr << "Error: No valid function context available!" << std::endl;
-      return;
-    }
-
-    llvm::AllocaInst *alloca = createEntryBlockAlloca(function, varName, varType);
-    namedValues[varName] = alloca;
-
-    if (node->getChildren().size() > 2)
-    {
-      ASTNode *assignmentNode = node->getChildren()[2];
-      llvm::Value *value = generateExpression(assignmentNode->getChildren()[0]);
-      builder.CreateStore(value, alloca);
-    }
+  if (node->isProcessed()) {
+    return;
   }
-  else if (node->getType() == "STATEMENT" && node->getValue() == "if")
-  {
-    ASTNode *conditionNode = node->getChildren()[0];
-    ASTNode *thenBlockNode = node->getChildren()[1];
-    ASTNode *elseBlockNode = (node->getChildren().size() > 2) ? node->getChildren()[2] : nullptr;
 
-    llvm::Value *condition = generateExpression(conditionNode);
+  node->setProcessed(true);
 
-    if (!condition) {
-      std::cerr << "Error: condition is null in if statement generation! \n";
+  if (node->getType() != "Program") {
+    processNode(node, false);
+    for (const auto &child : node->getChildren()) {
+      dfsAST(child);
     }
-
-    Function *function = builder.GetInsertBlock()->getParent();
-    BasicBlock *thenBB = BasicBlock::Create(context, "then", function);
-    BasicBlock *elseBB = BasicBlock::Create(context, "else", function);
-    BasicBlock *mergeBB = BasicBlock::Create(context, "ifcont", function);
-
-    builder.CreateCondBr(condition, thenBB, elseBB);
-
-    builder.SetInsertPoint(thenBB);
-    dfsGenerateCode(thenBlockNode);
-    builder.CreateBr(mergeBB);
-
-    builder.SetInsertPoint(elseBB);
-    if (elseBlockNode) {
-      dfsGenerateCode(elseBlockNode);
+  } else {
+    for (const auto &child : node->getChildren()) {
+      dfsAST(child);
     }
-    builder.CreateBr(mergeBB);
-
-    builder.SetInsertPoint(mergeBB);
-  } else if (node->getType() == "STATEMENT" && node->getValue() == "out") {
-    ASTNode *funcCallNode = node->getChildren()[0];
-    ASTNode *argNode = funcCallNode->getChildren()[0];
-    argNode->set_type("LITERAL");
-
-    llvm::Value *argValue = generateExpression(argNode);
-
-    std::vector<llvm::Value*> args; 
-    args.push_back(argValue);
-    builder.CreateCall(outFunc, args);
   }
 }
 
-// Evaluates literals of different types and returns the coresponding LLVM constant
-llvm::Value *Codegen::generateExpression(ASTNode *node)
-{
-  std::string valueStr = node->getValue();
-  if (node->getType() == "LITERAL")
-  {
-    if (valueStr == "true" || valueStr == "false")
-    {
-      bool value = (valueStr == "true");
-      return llvm::ConstantInt::get(context, llvm::APInt(1, value));
+std::string Codegen::processNode(ASTNode *node, bool return_string) {
+  std::string nodeType = node->getType();
+
+  if (nodeType == "VAR_DECLARATION") {
+    ASTNode* assignmentNode = node->getChildren()[2];
+
+    std::string literalValue = assignmentNode->getChildren()[0]->getValue();
+    std::string tempVar = createTemporary();
+
+    if (!return_string) {
+      current_parent->addElement(std::make_shared<Instruction>("assign", tempVar + " = " + literalValue));
     }
-    else if (valueStr.front() == '"' && valueStr.back() == '"')
-    {
-      std::string strValue = valueStr.substr(1, valueStr.size() - 2);
-  
-      // Check if the string literal already exists
-      if (stringLiterals.find(strValue) != stringLiterals.end()) {
-        return stringLiterals[strValue];
+  } else if (nodeType == "STRING_LITERAL") {
+    std::string valueString = node->getValue();
+
+    if (return_string) {
+      return valueString;
+    }
+  } else if (nodeType == "CHAR_LITERAL") {
+    std::string valueChar = node->getValue();
+
+    if (return_string) {
+      return valueChar;
+    }
+  } else if (nodeType == "INT_LITERAL") {
+    std::string valueInt = node->getValue();
+
+    if (return_string) {
+      return valueInt;
+    }
+  } else if (nodeType == "FLOAT_LITERAL") {
+    std::string valueFloat = node->getValue();
+
+    if (return_string) {
+      return valueFloat;
+    }
+  } else if (nodeType == "BOOL_LITERAL") {
+    std::string valueBool = node->getValue();
+
+    if (return_string) {
+      return valueBool;
+    }
+  } else if (nodeType == "STATEMENT" && node->getValue() == "if") {
+    convertCondition(node->getChildren()[0]);
+
+    std::string conditionTemp = "%t" + std::to_string(temporaries_counter - 1);
+    std::string thenLabel = createLabel("then", 0);
+    std::string elseifLabel = createLabel("elseif", 0);
+    std::string elseifBlockLabel = createLabel("then", 1);
+    std::string elseLabel = createLabel("else", 0);
+    std::string mergeLabel = createLabel("merge", 0);
+
+    std::shared_ptr<Instruction> brInstruction = std::make_shared<Instruction>("br", "br " + conditionTemp + ", label " + thenLabel);
+    current_parent->addElement(brInstruction);
+
+    std::shared_ptr<Instruction> thenLabelIR = std::make_shared<Instruction>("label", thenLabel);
+    current_parent->addElement(thenLabelIR);
+    switchParent(thenLabelIR);
+    ASTNode *thenBlock = node->getChildren()[1];
+    thenBlock->setProcessed(true);
+    processNode(thenBlock, false);
+
+    current_parent->addElement(std::make_shared<Instruction>("br", "br label " + mergeLabel));
+    popParent();
+
+    // Check for else if and else nodes
+    ASTNode *parent = node->get_parent();
+    if (parent == nullptr) {
+      std::cerr << "parent is null" << std::endl;
+      std::terminate();
+    }
+
+    std::vector<ASTNode*> siblings = parent->getChildren();
+
+    bool elseNodeFound = false;
+    bool elseifNodeFound = false;
+
+    ASTNode *elseifNode;
+    ASTNode *elseNode;
+
+    for (int i = 0; i < siblings.size(); i++) {
+      if (siblings[i] == node) {
+        // Check the sibling right after the current 'if'
+        if (i + 1 < siblings.size()) {
+          ASTNode *siblingAfterIfNode = siblings[i + 1];
+          if (siblingAfterIfNode != nullptr) {
+            if (siblingAfterIfNode->getValue() == "else if") {
+              elseifNode = siblingAfterIfNode;
+              elseifNodeFound = true;
+              if (siblings[i + 2] != nullptr) {
+                if (siblings[i + 2]->getValue() == "else") {
+                  elseNode = siblings[i + 2];
+                  elseNodeFound = true;
+                  break;
+                }
+              }
+              break;
+            } else if (siblingAfterIfNode->getValue() == "else") {
+              elseNode = siblingAfterIfNode;
+              elseNodeFound = true;
+              break;
+            }
+          }
+        }
+        break; // No need to check further once the current 'if' is found
       }
-    
-      // Create new constant
-      llvm::Constant *constant = builder.CreateGlobalStringPtr(strValue, "", 0, module.get());
-      stringLiterals[strValue] = constant;
-      return constant;
     }
-    else if (valueStr.front() == '\'' && valueStr.back() == '\'')
-    {
-      char charvalue = valueStr[1];
-      
-      // Check if the char literal already exists
-      std::string charStr(1, charvalue);
-      if (charLiterals.find(charStr) != charLiterals.end()) {
-        return charLiterals[charStr];
+
+    std::shared_ptr<Instruction> updatedBrInstruction;
+
+    if (elseifNodeFound && elseifNode != nullptr) {
+      std::shared_ptr<Instruction> elseifSectionLabel = std::make_shared<Instruction>("label", elseifLabel);
+      current_parent->addElement(elseifSectionLabel);
+
+      ASTNode *elseifCondition = elseifNode->getChildren()[0];
+      convertCondition(elseifCondition);
+
+      std::string insertAfter = " label " + thenLabel;
+      updatedBrInstruction = findInstruction(rootIR, brInstruction);
+      updatedBrInstruction->insertAfter(insertAfter, ", label " +  elseifLabel);
+
+      std::string conditionTempElseif = "%t" + std::to_string(temporaries_counter - 1);
+      std::shared_ptr<Instruction> brInstructionElseif = std::make_shared<Instruction>("br", "br " + conditionTempElseif + ", label " + elseifBlockLabel + ", label " + elseLabel);
+      current_parent->addElement(brInstructionElseif);
+
+      std::shared_ptr<Instruction> elseifLabelIR = std::make_shared<Instruction>("label ", elseifBlockLabel);
+      current_parent->addElement(elseifLabelIR);
+      switchParent(elseifLabelIR);
+
+      ASTNode* elseifBlock = elseifNode->getChildren()[1];
+      elseifBlock->setProcessed(true);
+      processNode(elseifBlock, false);
+
+      current_parent->addElement(std::make_shared<Instruction>("br", "br label " + mergeLabel));
+      popParent();
+    }
+
+    if (elseNodeFound && elseNode != nullptr) {
+      std::shared_ptr<Instruction> elseBrInstruction;
+
+      std::string insertAfter = "";
+      if (elseifNodeFound) {
+        insertAfter = " label " + elseifLabel;
+        elseBrInstruction = updatedBrInstruction;
+      } else {
+        insertAfter = " label " + thenLabel;
+        elseBrInstruction = brInstruction;
       }
 
-      // Create new constant
-      llvm::Constant *constant = llvm::ConstantInt::get(context, llvm::APInt(8, charvalue));
-      charLiterals[charStr] = constant;
-      return constant;
+      if (!insertAfter.empty()) {
+        std::shared_ptr<Instruction> storedBrInstruction = findInstruction(rootIR, elseBrInstruction);
+        storedBrInstruction->insertAfter(insertAfter, ", label " + elseLabel);
+
+        std::shared_ptr<Instruction> elseLabelIR = std::make_shared<Instruction>("label ", elseLabel);
+        current_parent->addElement(elseLabelIR);
+        switchParent(elseLabelIR);
+        
+        ASTNode* elseBlock = elseNode->getChildren()[0];
+        elseBlock->setProcessed(true);
+        processNode(elseBlock, false);
+
+        current_parent->addElement(std::make_shared<Instruction>("br", "br label " + mergeLabel));
+        popParent();
+      }
     }
-    else if (valueStr.find('.') != std::string::npos)
-    {
-      float value = std::stof(valueStr);
-      return llvm::ConstantFP::get(context, llvm::APFloat(value));
+
+    // Add merge
+    current_parent->addElement(std::make_shared<Instruction>("label", mergeLabel));
+  } else if (nodeType == "CODE_BLOCK") {
+    std::vector<ASTNode*> codeBlockChildren = node->getChildren();
+    for (int i = 0; i < codeBlockChildren.size(); i++) {
+      codeBlockChildren[i]->setProcessed(true);
+      processNode(codeBlockChildren[i], false);
     }
-    else
-    {
-      uint64_t value = std::stoull(valueStr);
-      return llvm::ConstantInt::get(context, llvm::APInt(32, value));
+  }
+
+  return "";
+}
+
+void Codegen::convertCondition(ASTNode *node) {
+  std::string leftTemp, rightTemp, operatorTemp;
+
+  // Convert left operand
+  if (node->getChildren()[0]->getType() == "IDENTIFIER") {
+    leftTemp = node->getChildren()[0]->getValue();
+  } else {
+    node->getChildren()[0]->setProcessed(true);
+    leftTemp = processNode(node->getChildren()[0], true);
+  }
+
+  operatorTemp = node->getChildren()[1]->getValue();
+
+  // Convert right operand
+  if (node->getChildren()[2]->getType() == "IDENTIFIER") {
+    rightTemp = node->getChildren()[2]->getValue();
+  } else {
+    node->getChildren()[2]->setProcessed(true);
+    rightTemp = processNode(node->getChildren()[2], true);
+  }
+
+  std::string tempVar = createTemporary();
+
+  if (operatorTemp == "==") {
+    current_parent->addElement(std::make_shared<Instruction>("cmp", tempVar + " = (" + leftTemp + " == " + rightTemp + ")"));
+  } else if (operatorTemp == "!=") {
+    // addInstruction(Instruction("neq", leftTemp, rightTemp, tempVar));
+    current_parent->addElement(std::make_shared<Instruction>("neq", tempVar + " = (" + leftTemp + " != " + rightTemp + ")"));
+  } else if (operatorTemp == "<") {
+    // addInstruction(Instruction("lt", leftTemp, rightTemp, tempVar));
+    current_parent->addElement(std::make_shared<Instruction>("lt", tempVar + " = (" + leftTemp + " < " + rightTemp + ")"));
+  } else if (operatorTemp == ">") {
+    // addInstruction(Instruction("gt", leftTemp, rightTemp, tempVar));
+    current_parent->addElement(std::make_shared<Instruction>("gt", tempVar + " = (" + leftTemp + " > " + rightTemp + ")"));
+  } else if (operatorTemp == "<=") {
+    // addInstruction(Instruction("le", leftTemp, rightTemp, tempVar));
+    current_parent->addElement(std::make_shared<Instruction>("le", tempVar + " = (" + leftTemp + " <= " + rightTemp + ")"));
+  } else if (operatorTemp == ">=") {
+    // addInstruction(Instruction("ge", leftTemp, rightTemp, tempVar));
+    current_parent->addElement(std::make_shared<Instruction>("ge", tempVar + " = (" + leftTemp + " >= " + rightTemp + ")"));
+  }
+}
+
+void Codegen::switchParent(std::shared_ptr<Instruction> newParent) {
+  last_parent = current_parent;
+  current_parent = newParent;
+}
+
+void Codegen::popParent() {
+  current_parent = last_parent;
+  last_parent = nullptr;
+}
+
+std::shared_ptr<Instruction> Codegen::findInstruction(std::shared_ptr<CodegenElement> root, std::shared_ptr<Instruction> instr) {
+  auto instructionPtr = std::dynamic_pointer_cast<Instruction>(root);
+  if (instructionPtr != nullptr) {
+    for (const auto& child : instructionPtr->children) {
+      if (child == instr) {
+        return std::dynamic_pointer_cast<Instruction>(child);
+      }
+
+      if (auto found = findInstruction(child, instr)) {
+        return found;
+      }
     }
   }
 
   return nullptr;
-}
-
-// Allocates memory for each varibale
-llvm::AllocaInst *Codegen::createEntryBlockAlloca(llvm::Function *function, const std::string &varName, llvm::Type *type)
-{
-  llvm::IRBuilder<> tmpB(&function->getEntryBlock(), function->getEntryBlock().begin());
-  return tmpB.CreateAlloca(type, 0, varName.c_str());
-}
-
-// Removes a specified suffix from a string
-std::string Codegen::removeSuffix(const std::string& str, std::string suffix) {
-  if (str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0) {
-    return str.substr(0, str.size() - suffix.size());
-  }
-
-  return str;
-}
-
-void Codegen::printStringLiterals() const {
-  std::cout << "String Literals:" << std::endl;
-  for (const auto &pair : stringLiterals) {
-    std::cout << "String: " << pair.first << " -> ";
-    pair.second->print(llvm::errs());
-    std::cout << std::endl;
-  }
-
-  std::cout << "Char Literals:" << std::endl;
-  for (const auto &pair : charLiterals) {
-    std::cout << "Char: " << pair.first << " -> ";
-    pair.second->print(llvm::errs());
-    std::cout << std::endl;
-  }
 }
