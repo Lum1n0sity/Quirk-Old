@@ -6,14 +6,14 @@
 Parser::Parser(const std::string &filename)
     : lexer_(filename), current_parent_(nullptr) {}
 
-ASTNode *root = new ASTNode("Program");
+ASTNode* root = new ASTNode("Program");
 
 void Parser::Initalize() {
   current_parent_ = root;
   scope_stack_.push_back(root);
 }
 
-ASTNode *Parser::parse() {
+ASTNode* Parser::parse() {
   std::pair<TokenType, std::string> token;
 
   do {
@@ -22,21 +22,21 @@ ASTNode *Parser::parse() {
     switch (token.first) {
     case TokenType::KEYWORD:
       if (token.second == "if") {
-        ASTNode *if_node = new ASTNode("STATEMENT", "if");
+        ASTNode* if_node = new ASTNode("STATEMENT", "if");
 
         Condition condition = parseCondition();
 
         if (condition.error) {
-            ASTNode *error_node = new ASTNode("ERROR", "error");
+            ASTNode* error_node = new ASTNode("ERROR", "error");
             root->add_child(error_node);
             return nullptr;
         } else {
-            ASTNode *condition_node = new ASTNode("CONDITION", "");
-            ASTNode *left_condition_node = new ASTNode(
+            ASTNode* condition_node = new ASTNode("CONDITION", "");
+            ASTNode* left_condition_node = new ASTNode(
                 tokenTypeToString(condition.left.first), condition.left.second);
-            ASTNode *operator_condition_node = new ASTNode(
+            ASTNode* operator_condition_node = new ASTNode(
                 tokenTypeToString(condition.op.first), condition.op.second);
-            ASTNode *right_condition_node = new ASTNode(
+            ASTNode* right_condition_node = new ASTNode(
                 tokenTypeToString(condition.right.first), condition.right.second);
 
             condition_node->add_child(left_condition_node);
@@ -44,27 +44,27 @@ ASTNode *Parser::parse() {
             condition_node->add_child(right_condition_node);
             if_node->add_child(condition_node);
 
-            ASTNode *codeBlock_node = new ASTNode("CODE_BLOCK", "");
+            ASTNode* codeBlock_node = new ASTNode("CODE_BLOCK", "");
             if_node->add_child(codeBlock_node);
             current_parent_->add_child(if_node);
             switchParentNode(codeBlock_node);
         }
       } else if (token.second == "else if") {
-        ASTNode *elseif_node = new ASTNode("STATEMENT", "else if");
+        ASTNode* elseif_node = new ASTNode("STATEMENT", "else if");
 
         Condition condition = parseCondition();
 
         if (condition.error) {
-          ASTNode *error_node = new ASTNode("ERROR", "error");
+          ASTNode* error_node = new ASTNode("ERROR", "error");
           root->add_child(error_node);
           return nullptr;
         } else {
-          ASTNode *condition_node = new ASTNode("CONDITION", "");
-          ASTNode *left_condition_node = new ASTNode(
+          ASTNode* condition_node = new ASTNode("CONDITION", "");
+          ASTNode* left_condition_node = new ASTNode(
               tokenTypeToString(condition.left.first), condition.left.second);
-          ASTNode *operator_condition_node = new ASTNode(tokenTypeToString(condition.op.first), condition.op.second);
-          ASTNode *right_condition_node = new ASTNode(tokenTypeToString(condition.right.first), condition.right.second);
-          ASTNode *codeBlock_node = new ASTNode("CODE_BLOCK", "");
+          ASTNode* operator_condition_node = new ASTNode(tokenTypeToString(condition.op.first), condition.op.second);
+          ASTNode* right_condition_node = new ASTNode(tokenTypeToString(condition.right.first), condition.right.second);
+          ASTNode* codeBlock_node = new ASTNode("CODE_BLOCK", "");
 
           condition_node->add_child(left_condition_node);
           condition_node->add_child(operator_condition_node);
@@ -78,8 +78,8 @@ ASTNode *Parser::parse() {
       } else if (token.second == "else") {
         token = lexer_.getNextToken();
         if (token.first == TokenType::CURLY_PAREN && token.second == "{") {
-          ASTNode *else_node = new ASTNode("STATEMENT", "else");
-          ASTNode *codeBlock_node = new ASTNode("CODE_BLOCK", "");
+          ASTNode* else_node = new ASTNode("STATEMENT", "else");
+          ASTNode* codeBlock_node = new ASTNode("CODE_BLOCK", "");
 
           else_node->add_child(codeBlock_node);
           current_parent_->add_child(else_node);
@@ -87,17 +87,17 @@ ASTNode *Parser::parse() {
           parse();
         }
       } else if (token.second == "while") {
-        ASTNode *while_node = new ASTNode("STATEMENT", "while");
+        ASTNode* while_node = new ASTNode("STATEMENT", "while");
 
         Condition condition = parseCondition();
 
         if (condition.error) {
-          ASTNode *error_node = new ASTNode("ERROR", "error");
+          ASTNode* error_node = new ASTNode("ERROR", "error");
           root->add_child(error_node);
           return nullptr;
         } else {
-          ASTNode *condition_node = new ASTNode("CONDITION", "");
-          ASTNode *codeBlock_node = new ASTNode("CODE_BLOCK", "");
+          ASTNode* condition_node = new ASTNode("CONDITION", "");
+          ASTNode* codeBlock_node = new ASTNode("CODE_BLOCK", "");
 
           while_node->add_child(condition_node);
           while_node->add_child(codeBlock_node);
@@ -107,7 +107,7 @@ ASTNode *Parser::parse() {
           parse();
         }
       } else if (token.second == "for") {
-        ASTNode *for_node = new ASTNode("STATEMENT", "for");
+        ASTNode* for_node = new ASTNode("STATEMENT", "for");
 
         ForLoopCondition condition = parseForLoopCondition();
 
@@ -117,12 +117,27 @@ ASTNode *Parser::parse() {
           root->add_child(error_node);
           return nullptr;
         } else {
-          std::string combinedCondition =
-              condition.initialization + condition.condition + condition.update;
+          ASTNode* condition_node = new ASTNode("CONDITON", "");
+          ASTNode* int_node = new ASTNode("INT", condition.cInt.second);
+          ASTNode* i1_node = new ASTNode("IDENTIFIER", condition.i.second);
+          ASTNode* assignment_node = new ASTNode("ASSIGNMENT", "");
+          ASTNode* nl_node = new ASTNode(tokenTypeToString(condition.nl.first), condition.nl.second);
+          ASTNode* i2_node = new ASTNode("IDENTIFIER", condition.i2.second);
+          ASTNode* ro_node = new ASTNode("RELATIONAL_OPERATOR", condition.ro.second);
+          ASTNode* len_node = new ASTNode(tokenTypeToString(condition.len.first), condition.len.second);
+          ASTNode* i3_node = new ASTNode("IDENTIFIER", condition.i3.second);
+          ASTNode* uao_node = new ASTNode("UNARY_ARITHMETIC_OPERATOR", condition.uao.second);
+          ASTNode* codeBlock_node = new ASTNode("CODE_BLOCK", "");
 
-          ASTNode *condition_node = new ASTNode("CONDITON", combinedCondition);
-          ASTNode *codeBlock_node = new ASTNode("CODE_BLOCK", "");
-
+          condition_node->add_child(int_node);
+          condition_node->add_child(i1_node);
+          condition_node->add_child(assignment_node);
+          assignment_node->add_child(nl_node);
+          condition_node->add_child(i2_node);
+          condition_node->add_child(ro_node);
+          condition_node->add_child(len_node);
+          condition_node->add_child(i3_node);
+          condition_node->add_child(uao_node);
           for_node->add_child(condition_node);
           for_node->add_child(codeBlock_node);
 
@@ -132,8 +147,8 @@ ASTNode *Parser::parse() {
         }
         break;
       } else if (token.second == "out") {
-        ASTNode *out_node = new ASTNode("STATEMENT", "out");
-        ASTNode *functionCall_node = new ASTNode("FUNCTIONCALL", "out");
+        ASTNode* out_node = new ASTNode("STATEMENT", "out");
+        ASTNode* functionCall_node = new ASTNode("FUNCTIONCALL", "out");
 
         token = lexer_.getNextToken();
 
@@ -146,7 +161,7 @@ ASTNode *Parser::parse() {
           std::string tokenValue = std::get<2>(tokenInfo);
 
           if (isLiteralOrIdentifier) {
-            ASTNode *literal_node = new ASTNode(tokenType, tokenValue);
+            ASTNode* literal_node = new ASTNode(tokenType, tokenValue);
             functionCall_node->add_child(literal_node);
             out_node->add_child(functionCall_node);
 
@@ -306,51 +321,108 @@ Condition Parser::parseCondition() {
 
 ForLoopCondition Parser::parseForLoopCondition() {
   std::pair<TokenType, std::string> token;
-
-  std::string initialization;
-  std::string condition;
-  std::string update;
+  ForLoopCondition condition = {};
 
   token = lexer_.getNextToken();
-
   if (token.first != TokenType::ROUND_PAREN) {
-    std::cerr << "Syntax error: Expected '('" << std::endl;
-    return {"", "", "",
-            true}; // Return empty ForLoopCondition struct with error flag set
+    std::cerr << "Syntax error: Expected '(' in 'for' loop condition! Line: " << lexer_.getCurrentLineNumber() << std::endl;
+    condition.error = true;
+    return condition;
   }
 
   token = lexer_.getNextToken();
-
-  while (token.first != TokenType::PUNCTUATION) {
-    initialization += token.second;
-    token = lexer_.getNextToken();
+  if (token.first != TokenType::INT) {
+    std::cerr << "Syntax error: Expected variable type in 'for' loop condition! Line: " << lexer_.getCurrentLineNumber() << std::endl;
+    condition.error = true;
+    return condition;
   }
-
-  initialization += ';';
+  condition.cInt = token;
 
   token = lexer_.getNextToken();
-
-  while (token.first != TokenType::PUNCTUATION) {
-    condition += token.second;
-    token = lexer_.getNextToken();
+  if (token.first != TokenType::IDENTIFIER) {
+    std::cerr << "Syntax error: Expected identifier in 'for' loop condition! Line: " << lexer_.getCurrentLineNumber() << std::endl;
+    condition.error = true;
+    return condition;
   }
-
-  condition += ';';
+  condition.i = token;
 
   token = lexer_.getNextToken();
-
-  while (token.first != TokenType::ROUND_PAREN) {
-    update += token.second;
-    token = lexer_.getNextToken();
+  if (token.first != TokenType::ASSIGNMENT) {
+    std::cerr << "Syntax error: Expected '=' in 'for' loop initialization! Line: " << lexer_.getCurrentLineNumber() << std::endl;
+    condition.error = true;
+    return condition;
   }
 
-  if (initialization.empty() || condition.empty() || update.empty()) {
-    std::cerr << "Syntax error: Incomplete condition in 'for' loop! Line: "
-              << lexer_.getCurrentLineNumber() << std::endl;
-    return {"", "", "", true};
-  } else {
-    return {initialization, condition, update, false};
+  token = lexer_.getNextToken();
+  if (token.first != TokenType::NUMERIC_LITERAL) {
+    std::cerr << "Syntax error: Expected numeric literal in 'for' loop condition! Line: " << lexer_.getCurrentLineNumber() << std::endl;
+    condition.error = true;
+    return condition;
   }
+  condition.nl = token;
+
+  token = lexer_.getNextToken();
+  if (token.first != TokenType::PUNCTUATION) {
+    std::cerr << "Syntax error: Expected ';' in 'for' loop condition! Line: " << lexer_.getCurrentLineNumber() << std::endl;
+    condition.error = true;
+    return condition;
+  }
+
+  token = lexer_.getNextToken();
+  if (token.first != TokenType::IDENTIFIER) {
+    std::cerr << "Syntax error: Expected identifier in 'for' loop condition! Line: " << lexer_.getCurrentLineNumber() << std::endl;
+    condition.error = true;
+    return condition;
+  }
+  condition.i2 = token;
+
+  token = lexer_.getNextToken();
+  if (token.first != TokenType::RELATIONAL_OPERATOR) {
+    std::cerr << "Syntax error: Expected relational operator in 'for' loop condition! Line: " << lexer_.getCurrentLineNumber() << std::endl;
+    condition.error = true;
+    return condition;
+  }
+  condition.ro = token;
+
+  token = lexer_.getNextToken();
+  if (token.first != TokenType::IDENTIFIER && token.first != TokenType::NUMERIC_LITERAL) {
+    std::cerr << "Syntax error: Expected length variable or numeric literal in 'for' loop condition! Line: " << lexer_.getCurrentLineNumber() << std::endl;
+    condition.error = true;
+    return condition;
+  }
+  condition.len = token;
+
+  token = lexer_.getNextToken();
+  if (token.first != TokenType::PUNCTUATION) {
+    std::cerr << "Syntax error: Expected ';' in 'for' loop condition! Line: " << lexer_.getCurrentLineNumber() << std::endl;
+    condition.error = true;
+    return condition;
+  }
+  
+  token = lexer_.getNextToken();
+  if (token.first != TokenType::IDENTIFIER) {
+    std::cerr << "Syntax error: Expected identifier in 'for' loop condition! Line: " << lexer_.getCurrentLineNumber() << std::endl;
+    condition.error = true;
+    return condition;
+  }
+  condition.i3 = token;
+
+  token = lexer_.getNextToken();
+  if (token.first != TokenType::UNARY_ARITHMETIC_OPERATOR) {
+    std::cerr << "Syntax error: Expected increment/decrement operator in 'for' loop condition! Line: " << lexer_.getCurrentLineNumber() << std::endl;
+    condition.error = true;
+    return condition;
+  }
+  condition.uao = token;
+
+  token = lexer_.getNextToken();
+  if (token.first != TokenType::ROUND_PAREN && token.second != ")") {
+    std::cerr << "Syntax error: Expected ')' in 'for' loop condition! Line: " << lexer_.getCurrentLineNumber() << std::endl;
+    condition.error = true;
+    return condition;
+  }
+  
+  return condition;
 }
 
 bool Parser::parseVarAssignment(TokenType varLiteralType, std::string varType) {
