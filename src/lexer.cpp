@@ -3,7 +3,7 @@
 Lexer::Lexer(const std::string &filename)
     : filename_(filename), currentPos_(0), lineNumber_(1),
       MATH_OPERATORS("+-*/%^"),
-      KEYWORD_REGEX("if|else|while|for|function|out"),
+      KEYWORD_REGEX("if|else if|else|while|for|function|out|return"),
       IDENTIFIER_REGEX("[a-zA-Z_][a-zA-Z0-9_]*"), NUMERIC_LITERAL_REGEX("\\d+"),
       STRING_LITERAL_REGEX("\"[^\"]*\""), CHAR_LITERAL_REGEX("\'[^\']*\'"),
       BOOL_LITERAL_REGEX("true|false"), INT_REGEX("int"), FLOAT_REGEX("float"),
@@ -112,30 +112,12 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
   // Handle identifiers, keywords and variable types
   if (std::isalpha(c) || c == '_') {
     tokenValue += c;
+
     while (file_.get(c) && (std::isalnum(c) || c == '_')) {
       tokenValue += c;
     }
-    
-    if (c == ' ') {
-      std::string nextToken;
-      while (file_.get(c) && c == ' ');
-      if (c == 'i') {
-        nextToken += c;
-        while (file_.get(c) && (std::isalnum(c) || c == '_')) {
-          nextToken += c;
-        }
-        file_.unget();
+    file_.unget();
 
-        if (nextToken == "if") {
-          tokenValue += " " + nextToken;
-        }
-      } else {
-        file_.unget();
-      }
-    } else {
-      file_.unget();
-    }
-  
     currentPos_ += tokenValue.size();
 
     // Check for variable types
@@ -152,9 +134,7 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
     }
 
     // Check for keywords
-    if (tokenValue == "else if") {
-      return std::make_pair(TokenType::KEYWORD, tokenValue);
-    } else if (std::regex_match(tokenValue, KEYWORD_REGEX)) {
+    if (std::regex_match(tokenValue, KEYWORD_REGEX)) {
       return std::make_pair(TokenType::KEYWORD, tokenValue);
     }
 
