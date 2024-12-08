@@ -3,7 +3,7 @@
 Lexer::Lexer(const std::string &filename)
     : filename_(filename), currentPos_(0), lineNumber_(1),
       MATH_OPERATORS("+-*/%^"),
-      KEYWORD_REGEX("if|else if|else|while|for|function|out"),
+      KEYWORD_REGEX("if|else if|else|while|for|function|out|return"),
       IDENTIFIER_REGEX("[a-zA-Z_][a-zA-Z0-9_]*"), NUMERIC_LITERAL_REGEX("\\d+"),
       STRING_LITERAL_REGEX("\"[^\"]*\""), CHAR_LITERAL_REGEX("\'[^\']*\'"),
       BOOL_LITERAL_REGEX("true|false"), INT_REGEX("int"), FLOAT_REGEX("float"),
@@ -117,7 +117,7 @@ std::pair<TokenType, std::string> Lexer::getNextToken() {
       tokenValue += c;
     }
     file_.unget();
-    
+
     currentPos_ += tokenValue.size();
 
     // Check for variable types

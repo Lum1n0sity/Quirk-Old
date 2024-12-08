@@ -70,14 +70,17 @@ private:
   void dfsAST(ASTNode* node);
   std::string processNode(ASTNode* node, bool return_string);
   void convertCondition(ASTNode* node);
+  std::vector<std::string> convertForCondition(ASTNode* node, std::string conditionLabel, std::string bodyLabel, std::string endLabel);
   std::string createTemporary() { return "%t" + std::to_string(temporaries_counter++); }
   std::string createLabel(std::string labelStart, int add) { return "%" + labelStart + std::to_string(labels_counter + add); }
   void switchParent(std::shared_ptr<Instruction> parent);
   void popParent();
+  std::string toLowerCase(std::string string);
 
   int temporaries_counter = 0;
   int labels_counter = 0;
   Codegen* parent_;
+  std::vector<std::pair<std::string, std::string>> identifierTable_;
 };
 
 #endif

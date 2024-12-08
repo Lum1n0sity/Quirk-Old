@@ -1,16 +1,13 @@
 cmake_minimum_required(VERSION 3.13)
-project(QuirkCompilerCpp)
+project(QuirkCompilerCpp LANGUAGES CXX)
 
-find_package(LLVM REQUIRED CONFIG)
-list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
-include(AddLLVM)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 include_directories(${PROJECT_SOURCE_DIR}/include/quirk_compiler)
-include_directories(${LLVM_INCLUDE_DIRS})
-add_definitions(${LLVM_DEFINITIONS})
 
-add_executable(QuirkCompilerCpp src/main.cpp src/parser.cpp src/codegen.cpp src/astnode.cpp)
+file(GLOB SOURCES "src/*.cpp")
 
-llvm_map_components_to_libnames(llvm_libs core irreader)
+add_executable(${PROJECT_NAME} ${SOURCES})
 
-target_link_libraries(QuirkCompilerCpp ${llvm_libs})
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
